@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Entity;
+namespace Celltrak\EventQueueBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM,
     CTLib\Entity\BaseEntity;

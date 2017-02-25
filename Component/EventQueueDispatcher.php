@@ -1,10 +1,10 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\Bundle\DoctrineBundle\Registry as DoctrineRegistry;
 use CTLib\Component\Monolog\Logger;
-use CellTrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
 use CTLib\Util\Util;
 use Doctrine\DBAL\DBALException;
 use CTLib\Util\PDOExceptionInspector;

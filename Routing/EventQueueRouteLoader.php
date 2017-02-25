@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Routing;
+namespace Celltrak\EventQueueBundle\Routing;
 
 use Symfony\Component\Config\Loader\Loader;
 use Symfony\Component\Routing\Route;

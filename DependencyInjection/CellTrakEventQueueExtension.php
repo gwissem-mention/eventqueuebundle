@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component\DependencyInjection;
+namespace Celltrak\EventQueueBundle\DependencyInjection;
 
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -13,13 +13,13 @@ use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
  *
  * @author Mike Turoff
  */
-class CellTrakEventQueueExtension extends Extension
+class CelltrakEventQueueExtension extends Extension
 {
 
     /**
      * Class namespace for EventQueue service classes.
      */
-    const NS = 'CellTrak\EventQueueBundle\Component';
+    const NS = 'Celltrak\EventQueueBundle\Component';
 
     /**
      * Service ID for EventQueueManager service.
@@ -51,7 +51,7 @@ class CellTrakEventQueueExtension extends Extension
         $this->loadEventQueueManager();
         $this->loadProcessingManager();
         $this->loadDispatcher();
-        $this->loadApiAuthenticator();
+        // $this->loadApiAuthenticator();
         $this->loadRouteLoader();
         $this->loadWorkerController();
         $this->loadChannelController();

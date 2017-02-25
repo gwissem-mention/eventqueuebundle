@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Entity;
+namespace Celltrak\EventQueueBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM,
     CTLib\Entity\BaseEntity;
@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM,
  * @author Mike Turoff
  *
  * @ORM\Table(name="event_queue_worker")
- * @ORM\Entity(repositoryClass="CellTrak\EventQueueBundle\Repository\EventQueueWorkerRepository")
+ * @ORM\Entity(repositoryClass="Celltrak\EventQueueBundle\Repository\EventQueueWorkerRepository")
  */
 class EventQueueWorker extends BaseEntity
 {

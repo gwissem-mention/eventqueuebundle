@@ -1,11 +1,11 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
 use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
-use CellTrak\EventQueueBundle\Entity\EventQueue;
-use CellTrak\EventQueueBundle\Entity\EventQueueWorker;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker;
 
 /**
  * Manages the queue workers that notify the registered listeners about
@@ -420,7 +420,7 @@ class EventQueueManager
         $worker =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueueWorker')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueueWorker')
             ->_find($workerId);
 
         if (!$worker) {
@@ -580,7 +580,7 @@ class EventQueueManager
             $numberDeleted = $this
                 ->entityManager
                 ->createQueryBuilder()
-                ->delete(CellTrak\EventQueueBundle:EventQueueWorker', 'eqw')
+                ->delete(Celltrak\EventQueueBundle:EventQueueWorker', 'eqw')
                 ->where(
                     "eqw.status IN ({$purgeStatusList})",
                     'eqw.modifiedOn < :purgeTime')
@@ -611,7 +611,7 @@ class EventQueueManager
             $numberDeleted = $this
                 ->entityManager
                 ->createQueryBuilder()
-                ->delete(CellTrak\EventQueueBundle:EventQueueId', 'eqi')
+                ->delete(Celltrak\EventQueueBundle:EventQueueId', 'eqi')
                 ->setMaxResults(self::GARBAGE_COLLECTION_BATCH_LIMIT)
                 ->getQuery()
                 ->execute();

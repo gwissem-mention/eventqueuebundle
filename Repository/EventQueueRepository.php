@@ -1,7 +1,7 @@
 <?php
-namespace CellTrak\EventQueueBundle\Repository;
+namespace Celltrak\EventQueueBundle\Repository;
 
-use CellTrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
 
 /**
  * EventQueueRepository

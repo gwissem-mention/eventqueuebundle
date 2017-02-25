@@ -1,10 +1,10 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
-use CellTrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
-use CellTrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
 use CTLib\Util\Util;
 use Celltrak\RedisBundle\Component\Client\CellTrakRedis;
 
@@ -247,7 +247,7 @@ class EventQueueChannel
         $maxQueueId =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueue')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueue')
             ->findChannelMaxQueueIdRequiringReDispatch($this->channelId);
 
         $this->logger->debug("EventQueueChannel: maxQueueId = {$maxQueueId}");
@@ -464,7 +464,7 @@ class EventQueueChannel
         $worker =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueueWorker')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueueWorker')
             ->_mustFind($workerId);
 
         if ($worker->getChannel() != $this->channelId) {
@@ -538,7 +538,7 @@ class EventQueueChannel
         $worker =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueueWorker')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueueWorker')
             ->_find($workerId);
 
         if (!$worker) {
@@ -606,7 +606,7 @@ class EventQueueChannel
         $worker =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueueWorker')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueueWorker')
             ->_find($workerId);
 
         if (!$worker) {
@@ -1277,7 +1277,7 @@ class EventQueueChannel
      */
     protected function reDispatchPersistedEvents($maxQueueId)
     {
-        $queueRepo = $this->entityManager->getRepository('CellTrak\EventQueueBundle:EventQueue');
+        $queueRepo = $this->entityManager->getRepository('Celltrak\EventQueueBundle:EventQueue');
 
         $queueRepo
             ->flagChannelReDispatchEventsAsPending($this->channelId, $maxQueueId);
@@ -1401,7 +1401,7 @@ class EventQueueChannel
             sleep(1);
         }
 
-        $queueRepo = $this->entityManager->getRepository('CellTrak\EventQueueBundle:EventQueue');
+        $queueRepo = $this->entityManager->getRepository('Celltrak\EventQueueBundle:EventQueue');
 
         $maxQueueId =
             $queueRepo
@@ -1627,7 +1627,7 @@ class EventQueueChannel
         $listenerLogs =
             $this
             ->entityManager
-            ->getRepository('CellTrak\EventQueueBundle:EventQueueListenerLog')
+            ->getRepository('Celltrak\EventQueueBundle:EventQueueListenerLog')
             ->_findBy($criteria);
 
         $listenerIds = [];

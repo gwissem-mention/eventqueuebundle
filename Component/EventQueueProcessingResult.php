@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 /**
  * Captures the result of processing an event and its listeners.

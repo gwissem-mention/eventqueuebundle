@@ -1,10 +1,10 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component\Controller;
+namespace Celltrak\EventQueueBundle\Component\Controller;
 
-use CellTrak\EventQueueBundle\Entity\EventQueueWorker;
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker;
 // @TODO replace SiteHelper. Cannot have AppBundle class here.
 use AppBundle\Helper\SiteHelper;
-use CellTrak\EventQueueBundle\Component\EventQueueManager;
+use Celltrak\EventQueueBundle\Component\EventQueueManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Doctrine\ORM\EntityManager;

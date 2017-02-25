@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component\DependencyInjection;
+namespace Celltrak\EventQueueBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -13,7 +13,7 @@ use CTLib\Util\Util;
  *
  * @author Mike Turoff
  */
-class EventQueueCompilerPass implements CompilerPassInterface
+class CelltrakEventQueueCompilerPass implements CompilerPassInterface
 {
 
     /**

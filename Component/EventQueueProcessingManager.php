@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 

@@ -3,7 +3,7 @@ namespace Celltrak\EventQueueBundle;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
-use CellTrak\EventQueueBundle\DependencyInjection\CellTrakEventQueueCompilerPass;
+use Celltrak\EventQueueBundle\DependencyInjection\CelltrakEventQueueCompilerPass;
 
 class CelltrakEventQueueBundle extends Bundle
 {
@@ -11,7 +11,7 @@ class CelltrakEventQueueBundle extends Bundle
     public function build(ContainerBuilder $container)
     {
         parent::build($container);
-        $container->addCompilerPass(new CellTrakEventQueueCompilerPass);
+        $container->addCompilerPass(new CelltrakEventQueueCompilerPass);
     }
 
 }

@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component\Controller;
+namespace Celltrak\EventQueueBundle\Component\Controller;
 
 use CTLib\Component\Monolog\Logger;
 use Symfony\Component\HttpFoundation\JsonResponse;

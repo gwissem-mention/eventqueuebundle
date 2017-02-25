@@ -1,25 +1,22 @@
 <?php
-namespace CellTrak\EventQueueBundle\Command;
+namespace Celltrak\EventQueueBundle\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use CellTrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
-use CellTrak\EventQueueBundle\Entity\EventQueue;
-use CellTrak\EventQueueBundle\Component\EventQueueChannel;
-use CellTrak\EventQueueBundle\Component\EventQueueWorker;
-
-// @TODO Replace with Symfony console command
-use AppBundle\Component\Console\AppCommand;
-
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Component\EventQueueChannel;
+use Celltrak\EventQueueBundle\Component\EventQueueWorker;
+use CTLib\Component\Console\BaseCommand;
 
 /**
  * Control event queue.
  *
  * @author Mike Turoff
  */
-class EventQueueCommand extends AppCommand
+class EventQueueCommand extends BaseCommand
 {
 
     /**
@@ -31,6 +28,7 @@ class EventQueueCommand extends AppCommand
 
         $this
             ->setDescription('Control event queue')
+            ->addArgument('siteId', InputArgument::REQUIRED)
             ->addArgument('action', InputArgument::REQUIRED)
             ->addArgument('id', InputArgument::OPTIONAL)
             ->addOption('data', null, InputOption::VALUE_REQUIRED, 'Data when dispatching event')

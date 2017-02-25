@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 /**
  * Interface for services called after the queued event is processed.

@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component\DependencyInjection;
+namespace Celltrak\EventQueueBundle\DependencyInjection;
 
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -10,7 +10,7 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
  *
  * @author Mike Turoff
  */
-class CellTrakEventQueueConfiguration implements ConfigurationInterface
+class CelltrakEventQueueConfiguration implements ConfigurationInterface
 {
 
     public function getConfigTreeBuilder()

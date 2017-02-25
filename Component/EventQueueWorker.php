@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Component;
+namespace Celltrak\EventQueueBundle\Component;
 
 use Doctrine\DBAL\DBALException;
 use Doctrine\Bundle\DoctrineBundle\Registry as DoctrineRegistry;
@@ -7,8 +7,8 @@ use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
 use CTLib\Util\PDOExceptionInspector;
 use CTLib\Util\MemoryUsageMonitor;
-use CellTrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
-use CellTrak\EventQueueBundle\Entity\EventQueue;
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
+use Celltrak\EventQueueBundle\Entity\EventQueue;
 
 
 /**
@@ -733,7 +733,7 @@ class EventQueueWorker
             $this->currentPinKeyHasBlock =
                 $this
                 ->entityManager
-                ->getRepository('CellTrak\EventQueueBundle:EventQueue')
+                ->getRepository('Celltrak\EventQueueBundle:EventQueue')
                 ->hasBlockingEventForPinKey(
                     $this->channel->getChannelId(),
                     $pinKey,

@@ -1,5 +1,5 @@
 <?php
-namespace CellTrak\EventQueueBundle\Entity;
+namespace Celltrak\EventQueueBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use CTLib\Entity\BaseEntity;
@@ -10,7 +10,7 @@ use CTLib\Entity\BaseEntity;
  * @author Mike Turoff
  *
  * @ORM\Table(name="event_queue")
- * @ORM\Entity(repositoryClass="CellTrak\EventQueueBundle\Repository\EventQueueRepository")
+ * @ORM\Entity(repositoryClass="Celltrak\EventQueueBundle\Repository\EventQueueRepository")
  * @ORM\HasLifecycleCallbacks
  */
 class EventQueue extends BaseEntity implements \JsonSerializable

@@ -1,0 +1,31 @@
+{
+    "name": "celltrak/event-queue-bundle",
+    "type": "symfony-bundle",
+    "description": "Distributed event queue bundle for Symfony2",
+    "keywords": ["event queue", "message queue", "symfony"],
+    "authors": [
+        {
+            "name": "Mike Turoff",
+            "email": "mturoff@celltrak.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "symfony/framework-bundle": "^2.1",
+        "celltrak/CTLib": "dev-master#v2.5",
+        "celltrak/redis-bundle": "dev-master#v1.1"
+    },
+    "autoload": {
+        "psr-4": { "Celltrak\\EventQueueBundle\\": "" }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url":  "git@bitbucket.org:celltrakdev/ct20_ctlib.git"
+        },
+        {
+            "type": "vcs",
+            "url":  "git@bitbucket.org:celltrakdev/celltrakredisbundle.git"
+        }
+    ]
+}

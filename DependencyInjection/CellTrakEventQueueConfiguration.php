@@ -19,7 +19,6 @@ class CelltrakEventQueueConfiguration implements ConfigurationInterface
         $root = $tb->root('celltrak_event_queue');
 
         $root
-            ->canBeEnabled()
             ->children()
                 ->scalarNode('redis_client')
                     ->info('The service ID for the CellTrakRedis client used by the event queue')
@@ -98,7 +97,7 @@ class CelltrakEventQueueConfiguration implements ConfigurationInterface
             ->end()
         ->end();
 
-        return $root;
+        return $tb;
     }
 
 }

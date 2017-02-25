@@ -3,6 +3,7 @@ namespace Celltrak\EventQueueBundle\DependencyInjection;
 
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
@@ -19,7 +20,7 @@ class CelltrakEventQueueExtension extends Extension
     /**
      * Class namespace for EventQueue service classes.
      */
-    const NS = 'Celltrak\EventQueueBundle\Component';
+    const NS = 'Celltrak\EventQueueBundle';
 
     /**
      * Service ID for EventQueueManager service.

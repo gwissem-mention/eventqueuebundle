@@ -580,7 +580,7 @@ class EventQueueManager
             $numberDeleted = $this
                 ->entityManager
                 ->createQueryBuilder()
-                ->delete(Celltrak\EventQueueBundle:EventQueueWorker', 'eqw')
+                ->delete('Celltrak\EventQueueBundle:EventQueueWorker', 'eqw')
                 ->where(
                     "eqw.status IN ({$purgeStatusList})",
                     'eqw.modifiedOn < :purgeTime')
@@ -611,7 +611,7 @@ class EventQueueManager
             $numberDeleted = $this
                 ->entityManager
                 ->createQueryBuilder()
-                ->delete(Celltrak\EventQueueBundle:EventQueueId', 'eqi')
+                ->delete('Celltrak\EventQueueBundle:EventQueueId', 'eqi')
                 ->setMaxResults(self::GARBAGE_COLLECTION_BATCH_LIMIT)
                 ->getQuery()
                 ->execute();

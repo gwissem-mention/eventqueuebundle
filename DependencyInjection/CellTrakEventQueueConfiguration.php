@@ -10,20 +10,13 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
  *
  * @author Mike Turoff
  */
-class EventQueueConfiguration implements ConfigurationInterface
+class CellTrakEventQueueConfiguration implements ConfigurationInterface
 {
 
     public function getConfigTreeBuilder()
     {
-        // NOTE: Making changes here won't be automatically noticed by Symfony
-        // when it determines whether to rebuild the cached container in dev
-        // environments. Technically this code should be in AppExtension, but
-        // it's been moved here to prepare for eventual EventQueueBundle. If
-        // making a change here, you can simply save a space change in
-        // AppExtension to trigger the container rebuild.
-
         $tb = new TreeBuilder;
-        $root = $tb->root('event_queue');
+        $root = $tb->root('celltrak_event_queue');
 
         $root
             ->canBeEnabled()

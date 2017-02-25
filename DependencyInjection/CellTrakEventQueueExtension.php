@@ -1,6 +1,7 @@
 <?php
 namespace CellTrak\EventQueueBundle\Component\DependencyInjection;
 
+use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
@@ -12,7 +13,7 @@ use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
  *
  * @author Mike Turoff
  */
-class EventQueueExtension
+class CellTrakEventQueueExtension extends Extension
 {
 
     /**
@@ -33,16 +34,14 @@ class EventQueueExtension
      * @param ContainerBuilder $container
      * @return void
      */
-    public function load(array $config, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container)
     {
-        // NOTE: Making changes here won't be automatically noticed by Symfony
-        // when it determines whether to rebuild the cached container in dev
-        // environments. Technically this code should be in AppExtension, but
-        // it's been moved here to prepare for eventual EventQueueBundle. If
-        // making a change here, you can simply save a space change in
-        // AppExtension to trigger the container rebuild.
+        $processor = new Processor;
+        $config = $processor->processConfiguration(
+            new CellTrakEventQueueConfiguration,
+            $configs
+        );
 
-        if (!$config['enabled']) { return; }
 
         // Store for use in all the loader methods.
         $this->config = $config;

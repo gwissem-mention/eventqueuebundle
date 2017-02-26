@@ -1,5 +1,5 @@
 <?php
-namespace Celltrak\EventQueueBundle\Component\Controller;
+namespace Celltrak\EventQueueBundle\Controller;
 
 use Celltrak\EventQueueBundle\Entity\EventQueueWorker;
 // @TODO replace SiteHelper. Cannot have AppBundle class here.
@@ -97,6 +97,8 @@ class EventQueueWorkerController
         $this->entityManager->insert($worker);
 
         $workerId = $worker->getWorkerId();
+
+        die("Worker ID {$workerId}");
 
         // Fork worker process.
         $commandExecutor =

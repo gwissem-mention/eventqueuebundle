@@ -23,9 +23,12 @@ class CelltrakEventQueueExtension extends Extension
     const NS = 'Celltrak\EventQueueBundle';
 
     /**
-     * Service ID for EventQueueManager service.
+     * Service IDs.
      */
-    const QUEUE_MANAGER_SERVICE_ID = 'event_queue.manager';
+    const SERVICE_ID_QUEUE_MANAGER      = 'event_queue.manager';
+    const SERVICE_ID_DISPATCHER         = 'event_queue.dispatcher';
+    const SERVICE_ID_PROCESSING_MANAGER = 'event_queue.processing_manager';
+    const SERVICE_ID_WORKER_FACTORY     = 'event_queue.worker_factory';
 
 
     /**
@@ -48,7 +51,6 @@ class CelltrakEventQueueExtension extends Extension
         $this->config = $config;
         $this->container = $container;
 
-        $this->setWorkerParameters();
         $this->loadEventQueueManager();
         $this->loadProcessingManager();
         $this->loadDispatcher();
@@ -56,34 +58,7 @@ class CelltrakEventQueueExtension extends Extension
         $this->loadRouteLoader();
         $this->loadWorkerController();
         $this->loadChannelController();
-    }
-
-    /**
-     * Creates container parameters required when initializing a new worker.
-     * @return void
-     */
-    protected function setWorkerParameters()
-    {
-        $this
-        ->container
-        ->setParameter(
-            'event_queue.worker_max_listener_attempts',
-            $this->config['max_listener_attempts']
-        );
-
-        $this
-        ->container
-        ->setParameter(
-            'event_queue.worker_memory_usage_percentage',
-            $this->config['worker_memory_usage_percentage']
-        );
-
-        $this
-        ->container
-        ->setParameter(
-            'event_queue.worker_sleep_seconds',
-            $this->config['worker_sleep_seconds']
-        );
+        $this->loadWorkerFactory();
     }
 
     /**
@@ -94,7 +69,7 @@ class CelltrakEventQueueExtension extends Extension
      */
     protected function loadEventQueueManager()
     {
-        $serviceId = self::QUEUE_MANAGER_SERVICE_ID;
+        $serviceId = self::SERVICE_ID_QUEUE_MANAGER;
 
         $class = self::NS . "\Component\EventQueueManager";
 
@@ -183,7 +158,7 @@ class CelltrakEventQueueExtension extends Extension
      */
     protected function loadProcessingManager()
     {
-        $serviceId = 'event_queue.processing_manager';
+        $serviceId = self::SERVICE_ID_PROCESSING_MANAGER;
 
         $class = self::NS . "\Component\EventQueueProcessingManager";
 
@@ -192,6 +167,7 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
+        $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
     }
 
@@ -202,14 +178,14 @@ class CelltrakEventQueueExtension extends Extension
      */
     protected function loadDispatcher()
     {
-        $serviceId = 'event_queue.dispatcher';
+        $serviceId = self::SERVICE_ID_DISPATCHER;
 
         $class = self::NS . "\Component\EventQueueDispatcher";
 
         $entityManagerServiceId = $this->config['entity_manager'];
 
         $args = [
-            new Reference(self::QUEUE_MANAGER_SERVICE_ID),
+            new Reference(self::SERVICE_ID_QUEUE_MANAGER),
             new Reference($entityManagerServiceId),
             new Reference('doctrine'),
             new Reference('logger')
@@ -279,13 +255,14 @@ class CelltrakEventQueueExtension extends Extension
         $entityManagerServiceId = $this->config['entity_manager'];
 
         $args = [
-            new Reference(self::QUEUE_MANAGER_SERVICE_ID),
+            new Reference(self::SERVICE_ID_QUEUE_MANAGER),
             new Reference('site'),
             new Reference($entityManagerServiceId),
             new Reference('logger')
         ];
 
         $def = new Definition($class, $args);
+        $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
 
         $workerProvisionTimeout = $this->config['worker_provision_timeout'];
@@ -312,6 +289,35 @@ class CelltrakEventQueueExtension extends Extension
 
         $args = [
             new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $def->setPublic(false);
+        $this->container->setDefinition($serviceId, $def);
+    }
+
+    /**
+     * Loads EventQueueWorkerFactory definition.
+     * @return void
+     */
+    protected function loadWorkerFactory()
+    {
+        $serviceId = self::SERVICE_ID_WORKER_FACTORY;
+
+        $class = self::NS . "\Component\EventQueueWorkerFactory";
+
+        $entityManagerServiceId = $this->config['entity_manager'];
+
+        $args = [
+            new Reference(self::SERVICE_ID_QUEUE_MANAGER),
+            new Reference(self::SERVICE_ID_PROCESSING_MANAGER),
+            new Reference(self::SERVICE_ID_DISPATCHER),
+            new Reference($entityManagerServiceId),
+            new Reference('doctrine'),
+            new Reference('logger'),
+            $this->config['max_listener_attempts'],
+            $this->config['worker_memory_usage_percentage'],
+            $this->config['worker_sleep_seconds']
         ];
 
         $def = new Definition($class, $args);

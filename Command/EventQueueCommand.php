@@ -1,6 +1,8 @@
 <?php
 namespace Celltrak\EventQueueBundle\Command;
 
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
@@ -8,15 +10,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
 use Celltrak\EventQueueBundle\Entity\EventQueue;
 use Celltrak\EventQueueBundle\Component\EventQueueChannel;
-use Celltrak\EventQueueBundle\Component\EventQueueWorker;
-use CTLib\Component\Console\BaseCommand;
+use Celltrak\EventQueueBundle\Component\EventQueueManager;
+use Celltrak\EventQueueBundle\Component\EventQueueDispatcher;
+use Celltrak\EventQueueBundle\Component\EventQueueWorkerFactory;
+use CTLib\Component\Monolog\Logger;
+
 
 /**
  * Control event queue.
+ * @TODO Switch to console.command service once we have version of Symfony
+ * that supports.
  *
  * @author Mike Turoff
  */
-class EventQueueCommand extends BaseCommand
+class EventQueueCommand extends ContainerAwareCommand
 {
 
     /**
@@ -24,9 +31,8 @@ class EventQueueCommand extends BaseCommand
      */
     protected function configure()
     {
-        parent::configure();
-
         $this
+            ->setName('eventqueue:control')
             ->setDescription('Control event queue')
             ->addArgument('action', InputArgument::REQUIRED)
             ->addArgument('id', InputArgument::OPTIONAL)
@@ -44,6 +50,8 @@ class EventQueueCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->init();
+
         $action = $input->getArgument('action');
 
         switch ($action) {
@@ -88,6 +96,23 @@ class EventQueueCommand extends BaseCommand
             default:
                 throw new \RuntimeException("Invalid action '{$action}'");
         }
+    }
+
+    /**
+     * Initializes instance service variables.
+     * @TODO This will get replaced with __construct once we can define this
+     * command as a service with a later version of Symfony.
+     * @return void
+     */
+    protected function init()
+    {
+        $container = $this->getContainer();
+
+        $this->eventQueueManager = $container->get('event_queue.manager');
+        $this->eventQueueDispatcher = $container->get('event_queue.dispatcher');
+        $this->eventQueueWorkerFactory = $container->get('event_queue.worker_factory');
+        $this->logger = $container->get('logger');
+        $this->isDebug = $container->getParameter('kernel.debug');
     }
 
     /**
@@ -164,7 +189,7 @@ class EventQueueCommand extends BaseCommand
         InputInterface $input,
         OutputInterface $output
     ) {
-        $info = $this->getService('event_queue.manager')->inspect();
+        $info = $this->eventQueueManager->inspect();
 
         $output->writeln("");
         $output->writeln(str_repeat('-', 80));
@@ -205,11 +230,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{channel} is required for 'inspect-channel' action");
         }
 
-        $channel =
-            $this
-            ->getService('event_queue.manager')
-            ->getChannel($channelId);
-
+        $channel = $this->eventQueueManager->getChannel($channelId);
         $channelInfo = $channel->inspect();
 
         $output->writeln("");
@@ -292,10 +313,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{channel} is required for 'start-channel' action");
         }
 
-        $started =
-            $this
-            ->getService('event_queue.manager')
-            ->startChannel($channelId, $error);
+        $started = $this->eventQueueManager->startChannel($channelId, $error);
 
         if (!$started) {
             throw new \RuntimeException("Cannot start '{$channelId}' channel: {$error}");
@@ -341,10 +359,7 @@ class EventQueueCommand extends BaseCommand
             }
         }
 
-        $stopped =
-            $this
-            ->getService('event_queue.manager')
-            ->stopChannel($channelId, $error);
+        $stopped = $this->eventQueueManager->stopChannel($channelId, $error);
 
         if (!$stopped) {
             throw new \RuntimeException("Cannot stop '{$channelId}' channel: {$error}");
@@ -372,10 +387,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{channel} is required for 'restart-channel' action");
         }
 
-        $restarted =
-            $this
-            ->getService('event_queue.manager')
-            ->restartChannel($channelId, $error);
+        $restarted = $this->eventQueueManager->restartChannel($channelId, $error);
 
         if (!$restarted) {
             throw new \RuntimeException("Cannot restart '{$channelId}' channel: {$error}");
@@ -397,11 +409,7 @@ class EventQueueCommand extends BaseCommand
         InputInterface $input,
         OutputInterface $output
     ) {
-        $results =
-            $this
-            ->getService('event_queue.manager')
-            ->startAllChannels();
-
+        $results = $this->eventQueueManager->startAllChannels();
         $this->outputAllChannelStatusChangeResults($output, $results, 'STARTED');
     }
 
@@ -435,11 +443,7 @@ class EventQueueCommand extends BaseCommand
             }
         }
 
-        $results =
-            $this
-            ->getService('event_queue.manager')
-            ->stopAllChannels();
-
+        $results = $this->eventQueueManager->stopAllChannels();
         $this->outputAllChannelStatusChangeResults($output, $results, 'STOPPED');
     }
 
@@ -454,11 +458,7 @@ class EventQueueCommand extends BaseCommand
         InputInterface $input,
         OutputInterface $output
     ) {
-        $results =
-            $this
-            ->getService('event_queue.manager')
-            ->restartAllChannels();
-
+        $results = $this->eventQueueManager->restartAllChannels();
         $this->outputAllChannelStatusChangeResults($output, $results, 'RESTARTED');
     }
 
@@ -517,7 +517,7 @@ class EventQueueCommand extends BaseCommand
                 throw new \RuntimeException("{workerId} is required for 'start-worker' action");
             }
 
-            $worker = $this->createWorker($workerId);
+            $worker = $this->eventQueueWorkerFactory->createWorker($workerId);
         } catch (\Exception $e) {
             $this->logger()->error((string) $e);
             throw $e;
@@ -539,7 +539,7 @@ class EventQueueCommand extends BaseCommand
 
         $output->writeln("");
         $output->writeln("<options=bold>Starting Worker ID {$workerId}...</>");
-        $output->writeln("<fg=green>To stop, use app:eventqueue stop-worker {$this->getService('site')->getSiteId()} {$workerId}.</>");
+        $output->writeln("<fg=green>To stop, use app:eventqueue stop-worker.</>");
         $output->writeln("");
 
         // Notify the worker of its host and system process id when starting.
@@ -549,7 +549,6 @@ class EventQueueCommand extends BaseCommand
         try {
             $worker->start($hostname, $pid);
         } catch (\Exception $e) {
-            print("\n\nCaught exception {$e}");
             $worker->stop(WorkerEntity::DEACTIVATED_REASON_ERROR, (string) $e);
         }
     }
@@ -574,11 +573,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{workerId} is required for 'stop-worker' action");
         }
 
-        $channel =
-            $this
-            ->getService('event_queue.manager')
-            ->getChannelForWorker($workerId);
-
+        $channel = $this->eventQueueManager->getChannelForWorker($workerId);
         $killed = $channel->killWorker($workerId);
 
         if (!$killed) {
@@ -610,11 +605,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{channel} is required for 'stop-all-workers' action");
         }
 
-        $channel =
-            $this
-            ->getService('event_queue.manager')
-            ->getChannel($channelId);
-
+        $channel = $this->eventQueueManager->getChannel($channelId);
         $controlLockId = $channel->acquireControlLock();
 
         if (!$controlLockId) {
@@ -674,13 +665,6 @@ class EventQueueCommand extends BaseCommand
         $output->writeln("<options=bold>{$queueIdLabel}{$resultLabel}</>");
         $output->writeln(str_repeat('-', 60));
 
-        $eventQueueManager = $this->getService('event_queue.manager');
-
-        $isDebugMode =
-            $this
-            ->getService('service_container')
-            ->getParameter('kernel.debug');
-
         $killedWorkerChannelIds = [];
 
         foreach ($queueEntries as $queueEntry) {
@@ -695,7 +679,7 @@ class EventQueueCommand extends BaseCommand
             }
 
             $channelId = $queueEntry->getChannel();
-            $channel = $eventQueueManager->getChannel($channelId);
+            $channel = $this->eventQueueManager->getChannel($channelId);
 
             if ($useFreshWorker && !in_array($channelId, $killedWorkerChannelIds)) {
                 $controlLockId = $channel->acquireControlLock();
@@ -770,13 +754,9 @@ class EventQueueCommand extends BaseCommand
             $data = [];
         }
 
-        $isDebugMode = $this
-                        ->getService('service_container')
-                        ->getParameter('kernel.debug');
-
-        if ($isDebugMode || $useFreshWorker) {
+        if ($this->isDebug || $useFreshWorker) {
             $channelId = $sourceQueueEntry->getChannel();
-            $channel = $this->getService('event_queue.manager')->getChannel($channelId);
+            $channel = $this->eventQueueManager->getChannel($channelId);
             $controlLockId = $channel->acquireControlLock();
 
             if (!$controlLockId) {
@@ -788,7 +768,7 @@ class EventQueueCommand extends BaseCommand
 
         $newQueueEntry =
             $this
-            ->getService('event_queue.dispatcher')
+            ->eventQueueDispatcher
             ->dispatch($eventName, $data, $referenceKey, $pinKey);
 
         $newQueueId = $newQueueEntry->getQueueId();
@@ -832,7 +812,7 @@ class EventQueueCommand extends BaseCommand
 
         $queueEntry =
             $this
-            ->getService('event_queue.dispatcher')
+            ->eventQueueDispatcher
             ->dispatch($eventName, $data, $referenceKey, $pinKey);
 
         $queueId = $queueEntry->getQueueId();
@@ -860,10 +840,7 @@ class EventQueueCommand extends BaseCommand
             throw new \RuntimeException("{channel} is required for 'update-channel' action");
         }
 
-        $channel =
-            $this
-            ->getService('event_queue.manager')
-            ->getChannel($channelId);
+        $channel = $this->eventQueueManager->getChannel($channelId);
 
         $maxWorkerCount = $input->getOption('max-worker-count');
 
@@ -904,64 +881,6 @@ class EventQueueCommand extends BaseCommand
         $output->writeln("");
         $output->writeln("<options=bold>Updated Channel {$channelId}</>");
         $output->writeln("");
-    }
-
-    /**
-     * Creates EventQueueWorker.
-     * @param integer $workerId
-     * @return EventQueueWorker
-     * @throws RuntimeException If specified worker is invalid.
-     */
-    protected function createWorker($workerId)
-    {
-        $queueManager = $this->getService('event_queue.manager');
-
-        $channel = $queueManager->getChannelForWorker($workerId);
-
-        if (!$channel) {
-            throw new \RuntimeException("Invalid workerId {$workerId}");
-        }
-
-        $worker =
-            new EventQueueWorker(
-                $workerId,
-                $channel,
-                $this->getService('event_queue.processing_manager'),
-                $this->getService('event_queue.dispatcher'),
-                $queueManager->getEntityManager(),
-                $this->getService('doctrine'),
-                $this->getService('logger')
-            );
-
-        // Get additional worker configuration through service container
-        // parameters.
-        $container = $this->getService('service_container');
-
-        $maxListenerAttempts =
-            $container
-            ->getParameter('event_queue.worker_max_listener_attempts');
-
-        $memoryUsagePercentage =
-            $container
-            ->getParameter('event_queue.worker_memory_usage_percentage');
-
-        $sleepSeconds =
-            $container
-            ->getParameter('event_queue.worker_sleep_seconds');
-
-        if ($maxListenerAttempts) {
-            $worker->setMaxListenerAttempts($maxListenerAttempts);
-        }
-
-        if ($memoryUsagePercentage) {
-            $worker->setMemoryUsagePercentage($memoryUsagePercentage);
-        }
-
-        if ($sleepSeconds) {
-            $worker->setSleepSeconds($sleepSeconds);
-        }
-
-        return $worker;
     }
 
 }

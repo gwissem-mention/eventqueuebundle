@@ -264,7 +264,6 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
     }
 
@@ -284,7 +283,6 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
     }
 

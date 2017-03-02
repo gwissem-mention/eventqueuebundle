@@ -733,7 +733,7 @@ class EventQueueWorker
             $this->currentPinKeyHasBlock =
                 $this
                 ->entityManager
-                ->getRepository('Celltrak\EventQueueBundle:EventQueue')
+                ->getRepository('CelltrakEventQueueBundle:EventQueue')
                 ->hasBlockingEventForPinKey(
                     $this->channel->getChannelId(),
                     $pinKey,

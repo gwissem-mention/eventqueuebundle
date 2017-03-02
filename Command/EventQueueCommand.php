@@ -519,7 +519,7 @@ class EventQueueCommand extends ContainerAwareCommand
 
             $worker = $this->eventQueueWorkerFactory->createWorker($workerId);
         } catch (\Exception $e) {
-            $this->logger()->error((string) $e);
+            $this->logger->error((string) $e);
             throw $e;
         }
 

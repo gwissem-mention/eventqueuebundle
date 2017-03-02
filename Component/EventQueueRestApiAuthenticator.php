@@ -3,6 +3,7 @@ namespace Celltrak\EventQueueBundle\Component;
 
 use CTLib\Component\Security\WebService\WebServiceRequestAuthenticatorInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use CTLib\Component\Monolog\Logger;
 
 
@@ -83,6 +84,14 @@ class EventQueueRestApiAuthenticator
             hash_hmac($this->authenticationAlgorithm, $uri, $this->authenticationKey);
 
         return $receivedAuthToken === $expectedAuthToken;
+    }
+
+    /**
+     * {@inheritDoct}
+     */
+    public function getAuthenticationFailureResponse()
+    {
+        return new Response('', 401);
     }
 
 }

@@ -253,27 +253,19 @@ class CelltrakEventQueueExtension extends Extension
         $class = self::NS . "\Controller\EventQueueWorkerController";
 
         $entityManagerServiceId = $this->config['entity_manager'];
+        $commandExecutorFactoryServiceId = $this->config['symfony_command_executor_factory'];
 
         $args = [
             new Reference(self::SERVICE_ID_QUEUE_MANAGER),
-            new Reference('site'),
+            new Reference($commandExecutorFactoryServiceId),
             new Reference($entityManagerServiceId),
-            new Reference('logger')
+            new Reference('logger'),
+            $this->config['worker_provision_timeout']
         ];
 
         $def = new Definition($class, $args);
         $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
-
-        $workerProvisionTimeout = $this->config['worker_provision_timeout'];
-
-        if ($workerProvisionTimeout) {
-            $def
-            ->addMethodCall(
-                'setWorkerProvisionTimeout',
-                [$workerProvisionTimeout]
-            );
-        }
     }
 
     /**

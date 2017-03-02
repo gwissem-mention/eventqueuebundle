@@ -2,9 +2,8 @@
 namespace Celltrak\EventQueueBundle\Controller;
 
 use Celltrak\EventQueueBundle\Entity\EventQueueWorker;
-// @TODO replace SiteHelper. Cannot have AppBundle class here.
-use AppBundle\Helper\SiteHelper;
 use Celltrak\EventQueueBundle\Component\EventQueueManager;
+use CTLib\Component\Console\SymfonyCommandExecutorFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Doctrine\ORM\EntityManager;
@@ -25,9 +24,9 @@ class EventQueueWorkerController
     protected $eventQueueManager;
 
     /**
-     * @var SiteHelper
+     * @var SymfonyCommandExecutorFactoryInterface
      */
-    protected $siteHelper;
+    protected $commandExecutorFactory;
 
     /**
      * @var EntityManager
@@ -48,20 +47,23 @@ class EventQueueWorkerController
 
     /**
      * @param EventQueueManager $eventQueueManager
-     * @param SiteHelper $siteHelper
+     * @param SymfonyCommandExecutorFactoryInterface $commandExecutorFactory
      * @param EntityManager $entityManager
      * @param Logger $logger
+     * @param integer $workerProvisionTimeout
      */
     public function __construct(
         EventQueueManager $eventQueueManager,
-        SiteHelper $siteHelper,
+        SymfonyCommandExecutorFactoryInterface $commandExecutorFactory,
         EntityManager $entityManager,
-        Logger $logger
+        Logger $logger,
+        $workerProvisionTimeout = 0
     ) {
-        $this->eventQueueManager    = $eventQueueManager;
-        $this->siteHelper           = $siteHelper;
-        $this->entityManager        = $entityManager;
-        $this->logger               = $logger;
+        $this->eventQueueManager        = $eventQueueManager;
+        $this->commandExecutorFactory   = $commandExecutorFactory;
+        $this->entityManager            = $entityManager;
+        $this->logger                   = $logger;
+        $this->workerProvisionTimeout   = $workerProvisionTimeout;
     }
 
     /**
@@ -98,13 +100,11 @@ class EventQueueWorkerController
 
         $workerId = $worker->getWorkerId();
 
-        die("Worker ID {$workerId}");
-
         // Fork worker process.
         $commandExecutor =
             $this
-            ->siteHelper
-            ->createCommandExecutor('eventqueue')
+            ->commandExecutorFactory
+            ->createCommandExecutor('event_queue:control')
             ->addArgument('start-worker')
             ->addArgument($workerId)
             ->addOption('quiet');
@@ -195,16 +195,5 @@ class EventQueueWorkerController
 
         return new Response("Worker ID {$workerId} killed");
     }
-
-
-    /**
-     * Sets timeout enforced when provisioning new worker.
-     * @param integer $workerProvisionTimeout
-     */
-    public function setWorkerProvisionTimeout($workerProvisionTimeout)
-    {
-        $this->workerProvisionTimeout = $workerProvisionTimeout;
-    }
-
 
 }

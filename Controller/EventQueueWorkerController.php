@@ -104,7 +104,7 @@ class EventQueueWorkerController
         $commandExecutor =
             $this
             ->commandExecutorFactory
-            ->createCommandExecutor('eventqueue:control')
+            ->createCommandExecutor('event_queue:control')
             ->addArgument('start-worker')
             ->addArgument($workerId)
             ->addOption('quiet');

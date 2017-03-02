@@ -32,7 +32,7 @@ class EventQueueCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-            ->setName('eventqueue:control')
+            ->setName('event_queue:control')
             ->setDescription('Control event queue')
             ->addArgument('action', InputArgument::REQUIRED)
             ->addArgument('id', InputArgument::OPTIONAL)

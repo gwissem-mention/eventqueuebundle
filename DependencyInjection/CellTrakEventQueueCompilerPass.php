@@ -44,7 +44,7 @@ class CelltrakEventQueueCompilerPass implements CompilerPassInterface
      */
     protected function registerListeners()
     {
-        $tag        = 'app.event_listener';
+        $tag        = 'event_queue.listener';
         $services   = $this->container->findTaggedServiceIds($tag);
 
         if (!$services) {
@@ -81,7 +81,7 @@ class CelltrakEventQueueCompilerPass implements CompilerPassInterface
      */
     protected function registerPreProcessors()
     {
-        $tag        = 'app.event_pre_processor';
+        $tag        = 'event_queue.pre_processor';
         $services   = $this->container->findTaggedServiceIds($tag);
 
         if (!$services) {
@@ -113,7 +113,7 @@ class CelltrakEventQueueCompilerPass implements CompilerPassInterface
      */
     protected function registerPostProcessors()
     {
-        $tag        = 'app.event_post_processor';
+        $tag        = 'event_queue.post_processor';
         $services   = $this->container->findTaggedServiceIds($tag);
 
         if (!$services) {

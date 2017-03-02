@@ -28,7 +28,6 @@ class EventQueueCommand extends BaseCommand
 
         $this
             ->setDescription('Control event queue')
-            ->addArgument('siteId', InputArgument::REQUIRED)
             ->addArgument('action', InputArgument::REQUIRED)
             ->addArgument('id', InputArgument::OPTIONAL)
             ->addOption('data', null, InputOption::VALUE_REQUIRED, 'Data when dispatching event')

@@ -539,7 +539,7 @@ class EventQueueCommand extends ContainerAwareCommand
 
         $output->writeln("");
         $output->writeln("<options=bold>Starting Worker ID {$workerId}...</>");
-        $output->writeln("<fg=green>To stop, use app:eventqueue stop-worker.</>");
+        $output->writeln("<fg=green>To stop, use eventqueue:control stop-worker.</>");
         $output->writeln("");
 
         // Notify the worker of its host and system process id when starting.

@@ -54,7 +54,7 @@ class CelltrakEventQueueExtension extends Extension
         $this->loadEventQueueManager();
         $this->loadProcessingManager();
         $this->loadDispatcher();
-        // $this->loadApiAuthenticator();
+        $this->loadApiAuthenticator();
         $this->loadRouteLoader();
         $this->loadWorkerController();
         $this->loadChannelController();
@@ -207,7 +207,7 @@ class CelltrakEventQueueExtension extends Extension
     {
         $serviceId = 'event_queue.rest_api_authenticator';
 
-        $class = self::NS . "\Security\EventQueueRestApiAuthenticator";
+        $class = self::NS . "\Component\EventQueueRestApiAuthenticator";
 
         $apiAuthKey         = $this->config['api_auth_key'];
         $apiAuthAlgorithm   = $this->config['api_auth_algorithm'];
@@ -219,7 +219,7 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        $def->addTag('app.web_service_request_authenticator');
+        $def->addTag('ctlib.web_service_request_authenticator');
         $def->setPublic(false);
         $this->container->setDefinition($serviceId, $def);
     }

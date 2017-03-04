@@ -1,8 +1,8 @@
 <?php
 namespace Celltrak\EventQueueBundle\Component;
 
-use CTLib\Component\GarbageCollector\GarbageCollectorInterface;
-use CTLib\Component\GarbageCollector\GarbageCollectionDateCalculator;
+use CTLib\Component\GarbageCollection\GarbageCollectorInterface;
+use CTLib\Component\GarbageCollection\GarbageCollectionDateCalculator;
 use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
 use Celltrak\EventQueueBundle\Entity\EventQueue;

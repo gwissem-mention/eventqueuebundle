@@ -59,6 +59,7 @@ class CelltrakEventQueueExtension extends Extension
         $this->loadWorkerController();
         $this->loadChannelController();
         $this->loadWorkerFactory();
+        $this->loadGarbageCollector();
     }
 
     /**
@@ -311,6 +312,26 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
+        $this->container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadGarbageCollector()
+    {
+        $serviceId = "event_queue.garbage_collector";
+
+        $class = self::NS . "\Component\EventQueueGarbageCollector";
+
+        $entityManagerServiceId = $this->config['entity_manager'];
+        $ttlDays = $this->config['database_record_ttl_days'];
+
+        $args = [
+            $ttlDays,
+            new Reference($entityManagerServiceId),
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $def->addTag('ctlib.garbage_collector');
         $this->container->setDefinition($serviceId, $def);
     }
 

@@ -93,6 +93,9 @@ class EventQueueCommand extends ContainerAwareCommand
             case 'update-channel':
                 return $this->execUpdateChannel($input, $output);
 
+            case 'show-event-config':
+                return $this->execShowEventConfig($input, $output);
+
             default:
                 throw new \RuntimeException("Invalid action '{$action}'");
         }
@@ -111,6 +114,7 @@ class EventQueueCommand extends ContainerAwareCommand
         $this->eventQueueManager = $container->get('event_queue.manager');
         $this->eventQueueDispatcher = $container->get('event_queue.dispatcher');
         $this->eventQueueWorkerFactory = $container->get('event_queue.worker_factory');
+        $this->eventQueueProcessingManager = $container->get('event_queue.processing_manager');
         $this->logger = $container->get('logger');
         $this->isDebug = $container->getParameter('kernel.debug');
     }
@@ -154,6 +158,9 @@ class EventQueueCommand extends ContainerAwareCommand
 
              . "\n" . str_repeat("-", $dividerLength)
              . "\n  " . $this->formatActionInfo("update-channel {channel}", "Updates channel configuration")
+
+             . "\n" . str_repeat("-", $dividerLength)
+             . "\n  " . $this->formatActionInfo("show-event-config", "Displays event and listener configuration")
 
              . "\n" . str_repeat("-", $dividerLength)
              . "\n  " . $this->formatActionInfo("list", "Lists these actions")
@@ -881,6 +888,73 @@ class EventQueueCommand extends ContainerAwareCommand
         $output->writeln("");
         $output->writeln("<options=bold>Updated Channel {$channelId}</>");
         $output->writeln("");
+    }
+
+    /**
+     * Displays configured events with their channel assignments and listeners.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
+    protected function execShowEventConfig(
+        InputInterface $input,
+        OutputInterface $output
+    ) {
+        $totalCols = 150;
+        $eventCols = 40;
+        $channelCols = 28;
+        $listenerCols = $totalCols - ($eventCols + $channelCols);
+
+        $output->writeln("");
+        $output->writeln(str_repeat('-', $totalCols));
+
+        $output->write("<options=bold>" . str_pad('EVENT', $eventCols) . "</>");
+        $output->write("<options=bold>" . str_pad('CHANNEL', $channelCols) . "</>");
+        $output->write("<options=bold>" . str_pad('LISTENERS', $listenerCols) . "</>");
+        $output->writeln("");
+        $output->writeln(str_repeat('-', $totalCols));
+
+        $allEvents = $this->eventQueueManager->getHandledEventsByChannelId();
+
+        foreach ($allEvents as $channelId => $events) {
+            sort($events);
+
+            foreach ($events as $event) {
+                $listenerIds = $this->eventQueueProcessingManager
+                    ->getListenerIdsForEvent($event);
+
+                $eventDisp = $this->abridgeAndPad($event, $eventCols);
+                $output->write($eventDisp);
+
+                $channelDisp = $this->abridgeAndPad($channelId, $channelCols);
+                $output->write($channelDisp);
+
+                if ($listenerIds) {
+                    foreach ($listenerIds as $i => $listenerId) {
+                        if ($i > 0) {
+                            $output->write(str_pad('', $eventCols + $channelCols));
+                        }
+
+                        $listenerDisp = str_pad(($i + 1) . '.', 4) . $listenerId;
+                        $listenerDisp = $this->abridgeAndPad($listenerDisp, $listenerCols);
+                        $output->writeln($listenerDisp);
+                    }
+                } else {
+                    $output->writeln("<No Listeners>");
+                }
+
+                $output->writeln("<fg=cyan>" . str_repeat("-", $totalCols) . "</>");
+            }
+        }
+
+        $output->writeln("");
+    }
+
+    protected function abridgeAndPad($str, $length)
+    {
+        $str = substr($str, 0, $length - 1);
+        $str = str_pad($str, $length);
+        return $str;
     }
 
 }

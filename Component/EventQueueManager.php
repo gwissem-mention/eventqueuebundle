@@ -362,6 +362,21 @@ class EventQueueManager
     }
 
     /**
+     * Returns handled events aggregated by channel id.
+     * @return array
+     */
+    public function getHandledEventsByChannelId()
+    {
+        $handledEventsByChannelId = [];
+
+        foreach ($this->handledEvents as $eventName => $channelId) {
+            $handledEventsByChannelId[$channelId][] = $eventName;
+        }
+
+        return $handledEventsByChannelId;
+    }
+
+    /**
      * Indicates whether a channel has been configured to handle specified event.
      * @param string $eventName
      * @return boolean

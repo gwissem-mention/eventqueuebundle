@@ -148,6 +148,23 @@ class EventQueueProcessingManager
     }
 
     /**
+     * Returns listener ids for event.
+     * @param string $eventName
+     * @return array
+     */
+    public function getListenerIdsForEvent($eventName)
+    {
+        if (!isset($this->listenerConfigs[$eventName])) {
+            return [];
+        }
+
+        return array_map(
+            function($listener) { return $listener->id; },
+            $this->listenerConfigs[$eventName]
+        );
+    }
+
+    /**
      * Returns listeners registered for event.
      * @param  string $eventName
      * @return array

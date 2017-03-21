@@ -115,6 +115,7 @@ class EventQueueCommand extends ContainerAwareCommand
         $this->eventQueueDispatcher = $container->get('event_queue.dispatcher');
         $this->eventQueueWorkerFactory = $container->get('event_queue.worker_factory');
         $this->eventQueueProcessingManager = $container->get('event_queue.processing_manager');
+        $this->entityManager = $this->eventQueueManager->getEntityManager();
         $this->logger = $container->get('logger');
         $this->isDebug = $container->getParameter('kernel.debug');
     }
@@ -659,7 +660,9 @@ class EventQueueCommand extends ContainerAwareCommand
         $queueIds = explode(',', $queueIdList);
         $criteria = ['queueId' => $queueIds];
 
-        $queueEntries = $this->repo('EventQueue')->_findBy($criteria);
+        $queueEntries = $this->entityManager
+            ->getRepository('CelltrakEventQueueBundle:EventQueue')
+            ->_findBy($criteria);
 
         if (!$queueEntries) {
             throw new \RuntimeException("No queue entries found for queueId(s) {$queueIdList}");
@@ -733,7 +736,9 @@ class EventQueueCommand extends ContainerAwareCommand
             throw new \RuntimeException("{queueId} is required for 'redispatch-event' action");
         }
 
-        $sourceQueueEntry = $this->repo('EventQueue')->_mustFind($queueId);
+        $sourceQueueEntry = $this->entityManager
+            ->getRepository('CelltrakEventQueueBundle:EventQueue')
+            ->_mustFind($queueId);
 
         $eventName      = $sourceQueueEntry->getEvent();
         $encodedData    = $sourceQueueEntry->getData();

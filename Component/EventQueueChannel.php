@@ -1329,7 +1329,10 @@ class EventQueueChannel
     {
         $this->logger->debug("EventQueueChannel: retrying persisted {$queueEntry}");
 
-        $updateFields = ['status' => EventQueue::STATUS_PENDING];
+        $updateFields = [
+            'status' => EventQueue::STATUS_PENDING,
+            'workerId' => null
+        ];
 
         try {
             $this->entityManager->updateForFields($queueEntry, $updateFields);
@@ -1401,7 +1404,8 @@ class EventQueueChannel
             sleep(1);
         }
 
-        $queueRepo = $this->entityManager->getRepository('CelltrakEventQueueBundle:EventQueue');
+        $queueRepo = $this->entityManager
+            ->getRepository('CelltrakEventQueueBundle:EventQueue');
 
         $maxQueueId =
             $queueRepo

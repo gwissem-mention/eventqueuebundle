@@ -208,6 +208,7 @@ class EventQueueRepository extends \CTLib\Repository\BaseRepository
             ->createQueryBuilder('q')
             ->update()
             ->set('q.status', ':pendingStatus')
+            ->set('q.workerId', 'NULL')
             ->set('q.modifiedOn', ':now')
             ->where(
                 'q.channel      = :channel',

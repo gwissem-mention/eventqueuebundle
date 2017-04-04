@@ -7,21 +7,33 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
-use Celltrak\EventQueueBundle\Entity\EventQueue;
 use Celltrak\EventQueueBundle\Component\EventQueueChannel;
 use Celltrak\EventQueueBundle\Component\EventQueueManager;
-use Celltrak\EventQueueBundle\Component\EventQueueDispatcher;
-use Celltrak\EventQueueBundle\Component\EventQueueWorkerFactory;
 use CTLib\Component\Monolog\Logger;
 use CTLib\Component\Console\ConsoleOutputHelper;
 use CTLib\Component\Console\ConsoleTable;
 use CTLib\Component\Console\ConsoleProcessResult;
 
 
-
+/**
+ * Manages event queue channels.
+ * @author Mike Turoff
+ *
+ * To see possible actions, use:
+ *  event_queue:channel list
+ */
 class EventQueueChannelCommand extends ContainerAwareCommand
 {
+
+    /**
+     * Channel statuses that should be formatted as alert condition (red).
+     */
+    const CHANNEL_ALERT_STATUSES = [
+        'N/A',
+        EventQueueChannel::STATUS_STOPPING,
+        EventQueueChannel::STATUS_STOPPED
+    ];
+
 
     /**
      * {@inheritDoc}
@@ -38,6 +50,9 @@ class EventQueueChannelCommand extends ContainerAwareCommand
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Skip confirmation prompts');
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->init();
@@ -93,14 +108,18 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $container = $this->getContainer();
 
         $this->eventQueueManager = $container->get('event_queue.manager');
-        $this->eventQueueDispatcher = $container->get('event_queue.dispatcher');
-        $this->eventQueueWorkerFactory = $container->get('event_queue.worker_factory');
         $this->eventQueueProcessingManager = $container->get('event_queue.processing_manager');
-        $this->entityManager = $this->eventQueueManager->getEntityManager();
         $this->logger = $container->get('logger');
         $this->isDebug = $container->getParameter('kernel.debug');
     }
 
+    /**
+     * Shows possible command actions.
+     *
+     * @param  InputInterface $input
+     * @param  OutputInterface $output
+     * @return void
+     */
     protected function execList(InputInterface $input, OutputInterface $output)
     {
         $showConfigActions = [
@@ -146,6 +165,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         );
     }
 
+    /**
+     * Shows event listener configuration for specified channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execShowChannelEventConfig(
         InputInterface $input,
         OutputInterface $output
@@ -189,6 +215,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Shows event listener configuration for all channels.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execShowAllChannelEventConfig(
         InputInterface $input,
         OutputInterface $output
@@ -238,6 +271,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Shows state information for specified channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execInspectChannel(
         InputInterface $input,
         OutputInterface $output
@@ -255,13 +295,7 @@ class EventQueueChannelCommand extends ContainerAwareCommand
 
         $status = $info['status'];
 
-        $alertStatuses = [
-            'N/A',
-            EventQueueChannel::STATUS_STOPPING,
-            EventQueueChannel::STATUS_STOPPED
-        ];
-
-        if (in_array($status, $alertStatuses)) {
+        if (in_array($status, self::CHANNEL_ALERT_STATUSES)) {
             $statusColor = 'red';
         } else {
             $statusColor = 'green';
@@ -295,6 +329,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Shows state information for all channels.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execInspectAllChannels(
         InputInterface $input,
         OutputInterface $output
@@ -316,13 +357,7 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         foreach ($info as $channelId => $channelInfo) {
             $status = $channelInfo['status'];
 
-            $alertStatuses = [
-                'N/A',
-                EventQueueChannel::STATUS_STOPPING,
-                EventQueueChannel::STATUS_STOPPED
-            ];
-
-            if (in_array($status, $alertStatuses)) {
+            if (in_array($status, self::CHANNEL_ALERT_STATUSES)) {
                 $statusColor = 'red';
             } else {
                 $statusColor = 'green';
@@ -344,6 +379,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Starts specified channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execStartChannel(
         InputInterface $input,
         OutputInterface $output
@@ -369,6 +411,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Starts all channels.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execStartAllChannels(
         InputInterface $input,
         OutputInterface $output
@@ -393,6 +442,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Stops channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execStopChannel(
         InputInterface $input,
         OutputInterface $output
@@ -436,6 +492,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Stops all channels.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execStopAllChannels(
         InputInterface $input,
         OutputInterface $output
@@ -479,6 +542,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Restarts specified channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execRestartChannel(
         InputInterface $input,
         OutputInterface $output
@@ -515,6 +585,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Restarts all channels.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execRestartAllChannels(
         InputInterface $input,
         OutputInterface $output
@@ -555,6 +632,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Kills active workers for specified channel.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execKillChannelWorkers(
         InputInterface $input,
         OutputInterface $output
@@ -588,6 +672,13 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
     }
 
+    /**
+     * Updates channel runtime configuration.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execUpdateChannel(
         InputInterface $input,
         OutputInterface $output
@@ -639,14 +730,6 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $output->writeln("");
         $output->writeln("<options=bold>Updated Channel {$channelId}</>");
         $output->writeln("");
-    }
-
-
-    protected function abridgeAndPad($str, $length)
-    {
-        $str = substr($str, 0, $length - 1);
-        $str = str_pad($str, $length);
-        return $str;
     }
 
 }

@@ -401,7 +401,7 @@ class EventQueueChannel
             if ($runningSince == -1) {
                 $runningSince = 'N/A';
             } else {
-                $runningSince = date('c', (int) $runningSince);
+                $runningSince = date('Y-m-d H:i:s', (int) $runningSince);
             }
         } else {
             $runningSince = 'N/A';

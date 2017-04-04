@@ -128,6 +128,7 @@ class EventQueueManager
         $config = new \stdClass;
         $config->defaultMaxWorkers = $defaultMaxWorkers;
         $config->defaultMaxLoad = $defaultMaxLoad;
+        $config->handledEvents = $handledEvents;
         $this->channelConfigs[$channelId] = $config;
 
         $handledEvents = array_fill_keys($handledEvents, $channelId);
@@ -374,6 +375,16 @@ class EventQueueManager
         }
 
         return $handledEventsByChannelId;
+    }
+
+    public function getHandledEventsForChannel($channelId)
+    {
+        if ($this->hasChannel($channelId) == false) {
+            throw new \InvalidArgumentException("'{$channelId}' is not a registered channel");
+        }
+
+        $channelConfig = $this->channelConfigs[$channelId];
+        return $channelConfig->handledEvents;
     }
 
     /**

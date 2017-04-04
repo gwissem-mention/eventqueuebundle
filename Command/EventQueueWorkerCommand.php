@@ -31,7 +31,7 @@ class EventQueueWorkerCommand extends ContainerAwareCommand
         $this
             ->setName('event_queue:worker')
             ->setDescription('Manages event queue workers')
-            ->addArgument('action', InputArgument::REQUIRED)
+            ->addArgument('action', InputArgument::REQUIRED, "Use 'list' to see available actions")
             ->addArgument('workerId', InputArgument::REQUIRED);
     }
 

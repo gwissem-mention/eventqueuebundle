@@ -43,7 +43,7 @@ class EventQueueChannelCommand extends ContainerAwareCommand
         $this
             ->setName('event_queue:channel')
             ->setDescription('Manages event queue channels')
-            ->addArgument('action', InputArgument::REQUIRED)
+            ->addArgument('action', InputArgument::REQUIRED, "Use 'list' to see available actions")
             ->addArgument('channel', InputArgument::OPTIONAL)
             ->addOption('max-worker-count', null, InputOption::VALUE_REQUIRED, 'Max worker count used when updating channel')
             ->addOption('max-load-count', null, InputOption::VALUE_REQUIRED, 'Max load count used when updating channel')

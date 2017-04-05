@@ -42,7 +42,7 @@ class CelltrakEventQueueExtension extends Extension
     {
         $processor = new Processor;
         $config = $processor->processConfiguration(
-            new CellTrakEventQueueConfiguration,
+            new CelltrakEventQueueConfiguration,
             $configs
         );
 

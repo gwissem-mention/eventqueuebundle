@@ -21,7 +21,7 @@ class CelltrakEventQueueConfiguration implements ConfigurationInterface
         $root
             ->children()
                 ->scalarNode('redis_client')
-                    ->info('The service ID for the CellTrakRedis client used by the event queue')
+                    ->info('The service ID for the CelltrakRedis client used by the event queue')
                     ->isRequired()
                     ->cannotBeEmpty()
                 ->end()

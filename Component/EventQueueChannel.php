@@ -6,7 +6,7 @@ use CTLib\Component\Monolog\Logger;
 use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
 use Celltrak\EventQueueBundle\Entity\EventQueue;
 use CTLib\Util\Util;
-use Celltrak\RedisBundle\Component\Client\CellTrakRedis;
+use Celltrak\RedisBundle\Component\Client\CelltrakRedis;
 
 
 /**
@@ -94,7 +94,7 @@ class EventQueueChannel
     protected $defaultMaxLoad;
 
     /**
-     * @var CellTrakRedis
+     * @var CelltrakRedis
      */
     protected $redis;
 
@@ -134,7 +134,7 @@ class EventQueueChannel
         $channelId,
         $defaultMaxWorkers,
         $defaultMaxLoad,
-        CellTrakRedis $redis,
+        CelltrakRedis $redis,
         EntityManager $entityManager,
         Logger $logger
     ) {

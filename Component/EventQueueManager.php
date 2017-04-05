@@ -1,7 +1,7 @@
 <?php
 namespace Celltrak\EventQueueBundle\Component;
 
-use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
+use Celltrak\RedisBundle\Component\Client\CelltrakRedis;
 use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
 
@@ -21,7 +21,7 @@ class EventQueueManager
 
 
     /**
-     * @var CellTrakRedis
+     * @var CelltrakRedis
      */
     protected $redis;
 
@@ -69,12 +69,12 @@ class EventQueueManager
 
 
     /**
-     * @param CellTrakRedis $redis
+     * @param CelltrakRedis $redis
      * @param EntityManager $entityManager
      * @param Logger $logger
      */
     public function __construct(
-        CellTrakRedis $redis,
+        CelltrakRedis $redis,
         EntityManager $entityManager,
         Logger $logger
     ) {

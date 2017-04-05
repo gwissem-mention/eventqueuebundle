@@ -89,7 +89,7 @@ class EventQueueRestApiAuthenticator
     /**
      * {@inheritDoct}
      */
-    public function getAuthenticationFailureResponse()
+    public function getAuthenticationFailureResponse(Request $request)
     {
         return new Response('', 401);
     }

@@ -91,7 +91,7 @@ class CelltrakEventQueueConfiguration implements ConfigurationInterface
                             ->integerNode('worker_zombie_idle_seconds')
                                 ->info('The number of seconds since a worker\'s last check-in before it\'s considered a zombie (defaults to 180)')
                                 ->min(30)
-                                ->defaultValue(180)
+                                ->defaultValue(300)
                             ->end()
                             ->arrayNode('events')
                                 ->info('Events handled by this channel')

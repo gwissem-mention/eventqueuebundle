@@ -36,36 +36,16 @@ class EventQueueManager
     protected $logger;
 
     /**
-     * Set of registered channel configurations.
-     * @var array
-     */
-    protected $channelConfigs;
-
-    /**
      * Set of registered events handled by this queue.
      * @var array
      */
     protected $handledEvents;
 
     /**
-     * Set of instantiated EventQueueChannel instances.
+     * Set of registered EventQueueChannels.
      * @var array
      */
     protected $channels;
-
-    /**
-     * Token used to run event queue in multi-tenant mode.
-     * @var string
-     */
-    protected $tenantKey;
-
-    /**
-     * The number of seconds since a worker's last check-in before it's
-     * considered to be a zombie process. This is passed thru to
-     * EventQueueChannel instances.
-     * @var integer
-     */
-    protected $zombieWorkerIdleSeconds;
 
 
     /**
@@ -78,12 +58,11 @@ class EventQueueManager
         EntityManager $entityManager,
         Logger $logger
     ) {
-        $this->redis                = $redis;
-        $this->entityManager        = $entityManager;
-        $this->logger               = $logger;
-        $this->channelConfigs       = [];
-        $this->handledEvents        = [];
-        $this->channels             = [];
+        $this->redis            = $redis;
+        $this->entityManager    = $entityManager;
+        $this->logger           = $logger;
+        $this->channels         = [];
+        $this->handledEvents    = [];
     }
 
     /**
@@ -95,21 +74,19 @@ class EventQueueManager
      * @param integer $defaultMaxLoad    Default number of events per worker
      *                                   before attempting to provision another
      *                                   worker.
+     * @param integer $workerZombieIdleSeconds Number of seconds before idle
+     *                                         worker is considered a zombie.
      * @return void
      */
-    public function registerChannel(
-        $channelId,
-        array $handledEvents,
-        $defaultMaxWorkers,
-        $defaultMaxLoad
-    ) {
-        if (isset($this->channelConfigs[$channelId])) {
+    public function registerChannel(EventQueueChannel $channel)
+    {
+        $channelId = $channel->getChannelId();
+
+        if (isset($this->channels[$channelId])) {
             throw new \InvalidArgumentException("Channel already registered for ID '{$channelId}'");
         }
 
-        if (!$handledEvents) {
-            throw new \InvalidArgumentException("At least 1 handled event is required");
-        }
+        $handledEvents = $channel->getHandledEvents();
 
         foreach ($handledEvents as $event) {
             if ($this->isHandledEvent($event)) {
@@ -117,19 +94,7 @@ class EventQueueManager
             }
         }
 
-        if (!is_int($defaultMaxWorkers) || $defaultMaxWorkers <= 0) {
-            throw new \InvalidArgumentException('$defaultMaxWorkers must be integer greater than 0');
-        }
-
-        if (!is_int($defaultMaxLoad) || $defaultMaxLoad <= 0) {
-            throw new \InvalidArgumentException('$defaultMaxLoad must be integer greater than 0');
-        }
-
-        $config = new \stdClass;
-        $config->defaultMaxWorkers = $defaultMaxWorkers;
-        $config->defaultMaxLoad = $defaultMaxLoad;
-        $config->handledEvents = $handledEvents;
-        $this->channelConfigs[$channelId] = $config;
+        $this->channels[$channelId] = $channel;
 
         $handledEvents = array_fill_keys($handledEvents, $channelId);
         $this->handledEvents += $handledEvents;
@@ -312,35 +277,11 @@ class EventQueueManager
      */
     public function getChannel($channelId)
     {
-        if (isset($this->channels[$channelId])) {
-            return $this->channels[$channelId];
-        }
-
-        if (!$this->hasChannel($channelId)) {
+        if (isset($this->channels[$channelId]) == false) {
             throw new \InvalidArgumentException("'{$channelId}' is not a registered channel");
         }
 
-        $channelConfig = $this->channelConfigs[$channelId];
-
-        $channel =
-            new EventQueueChannel(
-                $channelId,
-                $channelConfig->defaultMaxWorkers,
-                $channelConfig->defaultMaxLoad,
-                $this->redis,
-                $this->entityManager,
-                $this->logger);
-
-        if ($this->tenantKey) {
-            $channel->setTenantKey($this->tenantKey);
-        }
-
-        if ($this->zombieWorkerIdleSeconds) {
-            $channel->setZombieWorkerIdleSeconds($this->zombieWorkerIdleSeconds);
-        }
-
-        $this->channels[$channelId] = $channel;
-        return $channel;
+        return $this->channels[$channelId];
     }
 
     /**
@@ -350,7 +291,7 @@ class EventQueueManager
      */
     public function hasChannel($channelId)
     {
-        return isset($this->channelConfigs[$channelId]);
+        return isset($this->channels[$channelId]);
     }
 
     /**
@@ -359,7 +300,7 @@ class EventQueueManager
      */
     public function getChannelIds()
     {
-        return array_keys($this->channelConfigs);
+        return array_keys($this->channels);
     }
 
     /**
@@ -377,14 +318,19 @@ class EventQueueManager
         return $handledEventsByChannelId;
     }
 
+    /**
+     * Returns events handled by specified channel.
+     * @param string $channelId
+     * @return array
+     * @throws InvalidArgumentException
+     */
     public function getHandledEventsForChannel($channelId)
     {
         if ($this->hasChannel($channelId) == false) {
             throw new \InvalidArgumentException("'{$channelId}' is not a registered channel");
         }
 
-        $channelConfig = $this->channelConfigs[$channelId];
-        return $channelConfig->handledEvents;
+        return $this->channels[$channelId]->getHandledEvents();
     }
 
     /**
@@ -434,26 +380,9 @@ class EventQueueManager
     }
 
     /**
-     * Sets $tenantKey.
-     * @param string $tenantKey
-     * @return void
-     */
-    public function setTenantKey($tenantKey)
-    {
-        $this->tenantKey = $tenantKey;
-    }
-
-    /**
-     * Returns $tenantKey
-     * @return string
-     */
-    public function getTenantKey()
-    {
-        return $this->tenantKey;
-    }
-
-    /**
      * Returns EntityManager used by the queue.
+     * NOTE: Used by EventQueue commands since we can't define them as services
+     * until we upgrade to newer version of Symfony.
      * @return EntityManager
      */
     public function getEntityManager()
@@ -461,17 +390,5 @@ class EventQueueManager
         return $this->entityManager;
     }
 
-    /**
-     * Sets $zombieIdleWorkerSeconds.
-     * @param integer $zombieIdleWorkerSeconds
-     */
-    public function setZombieWorkerIdleSeconds($zombieWorkerIdleSeconds)
-    {
-        if (!is_int($zombieWorkerIdleSeconds)) {
-            throw new \InvalidArgumentException('$zombieWorkerIdleSeconds must be an int');
-        }
-
-        $this->zombieWorkerIdleSeconds = $zombieWorkerIdleSeconds;
-    }
 
 }

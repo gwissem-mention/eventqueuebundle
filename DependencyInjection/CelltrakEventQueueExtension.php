@@ -58,6 +58,7 @@ class CelltrakEventQueueExtension extends Extension
         $this->loadRouteLoader();
         $this->loadWorkerController();
         $this->loadChannelController();
+        $this->loadEventsController();
         $this->loadWorkerFactory();
         $this->loadGarbageCollector();
     }
@@ -287,6 +288,26 @@ class CelltrakEventQueueExtension extends Extension
     }
 
     /**
+     * Loads EventQueueEventsController definition.
+     *  >> Serves event queue Events REST API.
+     * @return void
+     */
+    protected function loadEventsController()
+    {
+        $serviceId = 'event_queue.events_controller';
+
+        $class = self::NS . "\Controller\EventQueueEventsController";
+
+        $args = [
+            new Reference(self::SERVICE_ID_DISPATCHER),
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $this->container->setDefinition($serviceId, $def);
+    }
+
+    /**
      * Loads EventQueueWorkerFactory definition.
      * @return void
      */
@@ -314,6 +335,10 @@ class CelltrakEventQueueExtension extends Extension
         $this->container->setDefinition($serviceId, $def);
     }
 
+    /**
+     * Loads EventQueueGarbageCollector definition.
+     * @return void
+     */
     protected function loadGarbageCollector()
     {
         $serviceId = "event_queue.garbage_collector";

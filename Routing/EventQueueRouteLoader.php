@@ -34,6 +34,15 @@ class EventQueueRouteLoader extends Loader
      */
     const CHANNEL_CONTROLLER_SERVICE = 'event_queue.channel_controller';
 
+    /**
+     * URI path to events endpoint.
+     */
+    const EVENTS_PATH = '/eventQueue/events';
+
+    /**
+     * Service ID of the event Events controller.
+     */
+    const EVENTS_CONTROLLER_SERVICE = 'event_queue.events_controller';
 
     /**
      * Indicates whether these routes have already been loaded into application.
@@ -57,6 +66,7 @@ class EventQueueRouteLoader extends Loader
         $this->routes = new RouteCollection();
         $this->loadProvisionWorkerRoute();
         $this->loadKillWorkerRoute();
+        $this->loadEventsDispatchRoute();
         $this->loaded = true;
 
         return $this->routes;
@@ -101,6 +111,22 @@ class EventQueueRouteLoader extends Loader
         $requirements   = ['_method' => 'DELETE'];
 
         $routeName = 'event_queue.kill_worker';
+        $route = new Route($path, $defaults, $requirements);
+        $this->routes->add($routeName, $route);
+    }
+
+    /**
+     * Loads the route to events dispatch action.
+     * @return void
+     */
+    protected function loadEventsDispatchRoute()
+    {
+        $path           = self::EVENTS_PATH;
+        $controller     = self::EVENTS_CONTROLLER_SERVICE . ':dispatchAction';
+        $defaults       = ['_controller' => $controller];
+        $requirements   = ['_method' => 'POST'];
+
+        $routeName = 'event_queue.dispatch_event';
         $route = new Route($path, $defaults, $requirements);
         $this->routes->add($routeName, $route);
     }

@@ -58,8 +58,9 @@ class EventQueueEventsController
             if (!isset($data['eventName'])) {
                 return new Response("EventQueueEventsController: missing required data for eventName", 400);
             }
-            if (!isset($data['eventData'])) {
-                return new Response("EventQueueEventsController: missing required data for eventData", 400);
+
+            if (isset($data['eventData']) && !is_array($data['eventData'])) {
+                return new Response("EventQueueEventsController: eventData must be object", 400);
             }
         }
 
@@ -68,7 +69,7 @@ class EventQueueEventsController
         // fire eventQueue Dispatch event
         $queueEntryResponse = $this->eventQueueDispatcher->dispatch(
             $data['eventName'],
-            $data['eventData'],
+            isset($data['eventData']) ? $data['eventData'] : [],
             isset($data['referenceKey']) ? $data['referenceKey'] : null,
             isset($data['pinKey']) ? $data['pinKey'] : null
         );

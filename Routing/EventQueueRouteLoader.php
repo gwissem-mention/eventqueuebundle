@@ -126,7 +126,7 @@ class EventQueueRouteLoader extends Loader
         $defaults       = ['_controller' => $controller];
         $requirements   = ['_method' => 'POST'];
 
-        $routeName = 'event_queue.events_dispatch';
+        $routeName = 'event_queue.dispatch_event';
         $route = new Route($path, $defaults, $requirements);
         $this->routes->add($routeName, $route);
     }

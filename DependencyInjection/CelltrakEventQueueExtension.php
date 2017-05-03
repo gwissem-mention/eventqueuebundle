@@ -141,9 +141,7 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        $tagAttributes = ['purgeThreshold' => 'gc.eventqueue_purge_age'];
-        $def->addTag('app.garbage_collector', $tagAttributes);
-
+        
         // Register channel configuration with EventQueueManager.
         foreach ($channelServiceIds as $channelServiceId) {
             $args = [new Reference($channelServiceId)];

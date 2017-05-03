@@ -67,30 +67,23 @@ class EventQueueManager
 
     /**
      * Registers queue channel configuration.
-     * @param string $channelId Channel's unique identifier.
-     * @param array $handledEvents Events handled by the channel.
-     * @param integer $defaultMaxWorkers Default number of workers allowed to
-     *                                   run concurrently in this channel.
-     * @param integer $defaultMaxLoad    Default number of events per worker
-     *                                   before attempting to provision another
-     *                                   worker.
-     * @param integer $workerZombieIdleSeconds Number of seconds before idle
-     *                                         worker is considered a zombie.
+     * @param EventQueueChannel $channel
      * @return void
+     * @throws RuntimeException
      */
     public function registerChannel(EventQueueChannel $channel)
     {
         $channelId = $channel->getChannelId();
 
         if (isset($this->channels[$channelId])) {
-            throw new \InvalidArgumentException("Channel already registered for ID '{$channelId}'");
+            throw new \RuntimeException("Channel already registered for ID '{$channelId}'");
         }
 
         $handledEvents = $channel->getHandledEvents();
 
         foreach ($handledEvents as $event) {
             if ($this->isHandledEvent($event)) {
-                throw new \InvalidArgumentException("'{$event}' event is already handled by another registered channel");
+                throw new \RuntimeException("'{$event}' event is already handled by another registered channel");
             }
         }
 

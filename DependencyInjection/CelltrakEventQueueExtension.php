@@ -64,6 +64,11 @@ class CelltrakEventQueueExtension extends Extension
         $this->loadGarbageCollector();
     }
 
+    /**
+     * Loads each EventQueueChannel definition.
+     *  >> Channels are the primary workhorse of the event queue.
+     * @return void
+     */
     protected function loadEventQueueChannels()
     {
         $class = self::NS . "\Component\EventQueueChannel";
@@ -87,7 +92,7 @@ class CelltrakEventQueueExtension extends Extension
             $existingEvents = array_intersect($handledEvents, $channelEvents);
 
             if ($existingEvents) {
-                throw new InvalidConfigurationException(join(', ', $existingEvents) . " events are already handled by another channel");
+                throw new InvalidConfigurationException(join(', ', $existingEvents) . " event(s) are already handled by another channel");
             }
 
             $serviceId = "event_queue.{$channelId}.channel";
@@ -141,7 +146,7 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        
+
         // Register channel configuration with EventQueueManager.
         foreach ($channelServiceIds as $channelServiceId) {
             $args = [new Reference($channelServiceId)];

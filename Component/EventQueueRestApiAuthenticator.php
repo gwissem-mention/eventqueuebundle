@@ -82,14 +82,14 @@ class EventQueueRestApiAuthenticator
             return false;
         }
 
-        $expectedAuthToken = $this->createAuthToken($request);
+        $expectedAuthToken = $this->createAuthTokenForRequest($request);
 
         if ($receivedAuthToken !== $expectedAuthToken) {
             $this->logger->debug("EventQueueRestApiAuthenticator: receivedAuthToken '{$receivedAuthToken}' does not match expectedAuthToken '{$expectedAuthToken}'");
             return false;
         }
 
-        $requestAge = $this->getRequestAge($request);
+        $requestAge = $this->getAgeOfRequest($request);
 
         if ($requestAge > self::REQUEST_EXPIRY_SECONDS) {
             $this->logger->debug("EventQueueRestApiAuthenticator: request expired ({$requestAge} seconds old)");
@@ -112,7 +112,7 @@ class EventQueueRestApiAuthenticator
      * @param Request $request
      * @return string
      */
-    protected function createAuthToken(Request $request)
+    protected function createAuthTokenForRequest(Request $request)
     {
         $uri = $request->getRequestUri();
         $authToken = hash_hmac(
@@ -131,7 +131,7 @@ class EventQueueRestApiAuthenticator
      * @param Request $request
      * @return integer
      */
-    protected function getRequestAge(Request $request)
+    protected function getAgeOfRequest(Request $request)
     {
         // Convert request time (ts) from milliseconds to seconds.
         $requestTime = $request->query->get('ts') / 100;

@@ -51,7 +51,8 @@ class CelltrakEventQueueExtension extends Extension
         $this->config = $config;
         $this->container = $container;
 
-        $this->loadEventQueueManager();
+        $channelServiceIds = $this->loadEventQueueChannels();
+        $this->loadEventQueueManager($channelServiceIds);
         $this->loadProcessingManager();
         $this->loadDispatcher();
         $this->loadApiAuthenticator();
@@ -64,12 +65,72 @@ class CelltrakEventQueueExtension extends Extension
     }
 
     /**
+     * Loads each EventQueueChannel definition.
+     *  >> Channels are the primary workhorse of the event queue.
+     * @return void
+     */
+    protected function loadEventQueueChannels()
+    {
+        $class = self::NS . "\Component\EventQueueChannel";
+
+        $redisClientServiceId   = $this->config['redis_client'];
+        $entityManagerServiceId = $this->config['entity_manager'];
+        $tenantKey              = $this->config['tenant_key'];
+
+        $redisReference         = new Reference($redisClientServiceId);
+        $entityManagerReference = new Reference($entityManagerServiceId);
+        $loggerReference        = new Reference('logger');
+
+        $channelServiceIds = [];
+
+        // Track handled events to make sure none are repeated in multiple
+        // channels.
+        $handledEvents = [];
+
+        foreach ($this->config['channels'] as $channelId => $channel) {
+            $channelEvents = $channel['events'];
+            $existingEvents = array_intersect($handledEvents, $channelEvents);
+
+            if ($existingEvents) {
+                throw new InvalidConfigurationException(join(', ', $existingEvents) . " event(s) are already handled by another channel");
+            }
+
+            $serviceId = "event_queue.{$channelId}.channel";
+
+            $args = [
+                $channelId,
+                $channel['events'],
+                $channel['default_max_workers'],
+                $channel['default_max_load'],
+                $channel['worker_zombie_idle_seconds'],
+                $redisReference,
+                $entityManagerReference,
+                $loggerReference,
+                $tenantKey
+            ];
+            $def = new Definition($class, $args);
+            $def->setPublic(false);
+            $this->container->setDefinition($serviceId, $def);
+
+            $channelServiceIds[] = $serviceId;
+
+            $handledEvents = array_merge($handledEvents, $channelEvents);
+        }
+
+        // Store handled events as container parameter so it can be used in
+        // EventQueueCompilerPass.
+        $this->container->setParameter('event_queue.events', $handledEvents);
+
+        return $channelServiceIds;
+    }
+
+    /**
      * Loads EventQueueManager definition.
      *  >> Controls start/stop of entire queue along with access to individual
      *  >> queue channels.
      * @return void
      */
-    protected function loadEventQueueManager()
+    protected function loadEventQueueManager(array $channelServiceIds)
     {
         $serviceId = self::SERVICE_ID_QUEUE_MANAGER;
 
@@ -85,72 +146,17 @@ class CelltrakEventQueueExtension extends Extension
         ];
 
         $def = new Definition($class, $args);
-        $tagAttributes = ['purgeThreshold' => 'gc.eventqueue_purge_age'];
-        $def->addTag('app.garbage_collector', $tagAttributes);
+
+        // Register channel configuration with EventQueueManager.
+        foreach ($channelServiceIds as $channelServiceId) {
+            $args = [new Reference($channelServiceId)];
+            $def->addMethodCall('registerChannel', $args);
+        }
 
         $this->container->setDefinition($serviceId, $def);
 
         // For backwards compatability.
         $this->container->setAlias('event_queue', $serviceId);
-
-        // Optional settings.
-        $tenantKey = $this->config['tenant_key'];
-        $zombieWorkerIdleSeconds = $this->config['worker_to_zombie_idle_seconds'];
-
-        if ($tenantKey) {
-            $def->addMethodCall('setTenantKey', [$tenantKey]);
-        }
-
-        if ($zombieWorkerIdleSeconds) {
-            $def
-            ->addMethodCall(
-                'setZombieWorkerIdleSeconds',
-                [$zombieWorkerIdleSeconds]
-            );
-        }
-
-        // Register channel configuration with EventQueueManager.
-        $this->registerChannels($def, $this->config['channels']);
-    }
-
-    /**
-     * Registers channel configuration with EventQueueManager.
-     * @param Definition $managerDefinition
-     * @param array $channels
-     * @return void
-     * @throws InvalidConfigurationException If more than one channel configured
-     *                                       to handle same event.
-     */
-    protected function registerChannels(
-        Definition $managerDefinition,
-        array $channels
-    ) {
-        // Track handled events to make sure none are repeated in multiple
-        // channels.
-        $handledEvents = [];
-
-        foreach ($channels as $channelId => $channel) {
-            $channelEvents = $channel['events'];
-            $existingEvents = array_intersect($handledEvents, $channelEvents);
-
-            if ($existingEvents) {
-                throw new InvalidConfigurationException(join(', ', $existingEvents) . " events are already handled by another channel");
-            }
-
-            $args = [
-                $channelId,
-                $channel['events'],
-                $channel['default_max_workers'],
-                $channel['default_max_load']
-            ];
-            $managerDefinition->addMethodCall('registerChannel', $args);
-
-            $handledEvents = array_merge($handledEvents, $channelEvents);
-        }
-
-        // Store handled events as container parameter so it can be used in
-        // EventQueueCompilerPass.
-        $this->container->setParameter('event_queue.events', $handledEvents);
     }
 
     /**

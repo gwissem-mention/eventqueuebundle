@@ -17,6 +17,12 @@ class EventQueueRestApiAuthenticator
 {
 
     /**
+     * Number of seconds before a request is considered invalid.
+     */
+    const REQUEST_EXPIRY_SECONDS = 5;
+
+
+    /**
      * Secret key used to sign API requests.
      * @var string
      */
@@ -69,21 +75,28 @@ class EventQueueRestApiAuthenticator
             return true;
         }
 
-        // TODO change header to 'authentication'
         $receivedAuthToken = $request->headers->get('authorization');
 
-        if (!$receivedAuthToken) {
+        if (empty($receivedAuthToken)) {
             $this->logger->debug("EventQueueRestApiAuthenticator: 'Authorization' header not provided");
             return false;
         }
 
-        $receivedAuthToken = base64_decode($receivedAuthToken);
+        $expectedAuthToken = $this->createAuthTokenForRequest($request);
 
-        $uri = $request->getUri();
-        $expectedAuthToken =
-            hash_hmac($this->authenticationAlgorithm, $uri, $this->authenticationKey);
+        if ($receivedAuthToken !== $expectedAuthToken) {
+            $this->logger->debug("EventQueueRestApiAuthenticator: receivedAuthToken '{$receivedAuthToken}' does not match expectedAuthToken '{$expectedAuthToken}'");
+            return false;
+        }
 
-        return $receivedAuthToken === $expectedAuthToken;
+        $requestAge = $this->getAgeOfRequest($request);
+
+        if ($requestAge > self::REQUEST_EXPIRY_SECONDS) {
+            $this->logger->debug("EventQueueRestApiAuthenticator: request expired ({$requestAge} seconds old)");
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -92,6 +105,37 @@ class EventQueueRestApiAuthenticator
     public function getAuthenticationFailureResponse(Request $request)
     {
         return new Response('', 401);
+    }
+
+    /**
+     * Creates the authentication token based on the request.
+     * @param Request $request
+     * @return string
+     */
+    protected function createAuthTokenForRequest(Request $request)
+    {
+        $uri = $request->getRequestUri();
+        $authToken = hash_hmac(
+            $this->authenticationAlgorithm,
+            $uri,
+            $this->authenticationKey
+        );
+
+        $this->logger->debug("EventQueueRestApiAuthenticator: created authToken '{$authToken}' for uri '{$uri}'");
+
+        return $authToken;
+    }
+
+    /**
+     * Returns age of request in seconds.
+     * @param Request $request
+     * @return integer
+     */
+    protected function getAgeOfRequest(Request $request)
+    {
+        // Convert request time (ts) from milliseconds to seconds.
+        $requestTime = $request->query->get('ts') / 100;
+        return time() - $requestTime;
     }
 
 }

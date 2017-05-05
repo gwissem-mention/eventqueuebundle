@@ -34,6 +34,7 @@ class EventQueueChannel
     const STATE_PENDING_EVENT_COUNT     = 'pendingEventCount';
     const STATE_MAX_LOAD_COUNT          = 'maxLoadCount';
     const STATE_MAX_WORKER_COUNT        = 'maxWorkerCount';
+    const STATE_WORKER_ZOMBIE_IDLE_SECS = 'workerZombieIdleSeconds';
     const STATE_RUNNING_SINCE           = 'runningSince';
 
     /**
@@ -66,12 +67,6 @@ class EventQueueChannel
      */
     const CONTROL_LOCK_TTL              = 600;
 
-    /**
-     * The default number of seconds since a worker's last check-in before it's
-     * considered to be a zombie process.
-     */
-    const DEFAULT_ZOMBIE_WORKER_IDLE_SECONDS = 180;
-
 
     /**
      * Channel's unique identifier.
@@ -80,18 +75,29 @@ class EventQueueChannel
     protected $channelId;
 
     /**
-     * The default number of workers allowed to run concurrently for this
-     * channel.
+     * Unique set of event names assigned to channel.
+     * @var array
+     */
+    protected $handledEvents;
+
+    /**
+     * Default maxmimum active workers allowed for channel.
      * @var integer
      */
     protected $defaultMaxWorkers;
 
     /**
-     * The default number of pending events per worker (on average) before this
-     * channel can create a new worker.
+     * Default maximum pending events per workers before a new worker is
+     * provisioned.
      * @var integer
      */
     protected $defaultMaxLoad;
+
+    /**
+     * Number of seconds before an idle worker is considered a zombie.
+     * @var integer
+     */
+    protected $workerZombieIdleSeconds;
 
     /**
      * @var CelltrakRedis
@@ -114,37 +120,54 @@ class EventQueueChannel
      */
     protected $tenantKey;
 
-    /**
-     * The number of seconds since a worker's last check-in before it's
-     * considered to be a zombie process.
-     * @var integer
-     */
-    protected $zombieWorkerIdleSeconds;
-
 
     /**
-     * @param string $channelId     Channel's unique identifier.
+     * @param string $channelId
+     * @param array $handledEvents
      * @param integer $defaultMaxWorkers
      * @param integer $defaultMaxLoad
+     * @param integer $workerZombieIdleSeconds
      * @param Redis $redis
      * @param EntityManager $entityManager
      * @param Logger $logger
+     * @param string $tenantKey
      */
     public function __construct(
         $channelId,
+        array $handledEvents,
         $defaultMaxWorkers,
         $defaultMaxLoad,
+        $workerZombieIdleSeconds,
         CelltrakRedis $redis,
         EntityManager $entityManager,
-        Logger $logger
+        Logger $logger,
+        $tenantKey = null
     ) {
+        if (empty($handledEvents)) {
+            throw new \InvalidArgumentException('$handledEvents must have at least 1 value');
+        }
+
+        if (!is_int($defaultMaxWorkers) || $defaultMaxWorkers <= 0) {
+            throw new \InvalidArgumentException('$defaultMaxWorkers must be integer greater than 0');
+        }
+
+        if (!is_int($defaultMaxLoad) || $defaultMaxLoad <= 0) {
+            throw new \InvalidArgumentException('$defaultMaxLoad must be integer greater than 0');
+        }
+
+        if (!is_int($workerZombieIdleSeconds) || $workerZombieIdleSeconds <= 0) {
+            throw new \InvalidArgumentException('$workerZombieIdleSeconds must be integer greater than 0');
+        }
+
         $this->channelId                = $channelId;
+        $this->handledEvents            = $handledEvents;
         $this->defaultMaxWorkers        = $defaultMaxWorkers;
         $this->defaultMaxLoad           = $defaultMaxLoad;
+        $this->workerZombieIdleSeconds  = $workerZombieIdleSeconds;
         $this->redis                    = $redis;
         $this->entityManager            = $entityManager;
         $this->logger                   = $logger;
-        $this->zombieWorkerIdleSeconds  = self::DEFAULT_ZOMBIE_WORKER_IDLE_SECONDS;
+        $this->tenantKey                = $tenantKey;
     }
 
     /**
@@ -221,8 +244,9 @@ class EventQueueChannel
         $stateKey = $this->getStateKey();
 
         $stateValues = [
-            self::STATE_STATUS              => self::STATUS_PRE_START,
-            self::STATE_PENDING_EVENT_COUNT => 0
+            self::STATE_STATUS                  => self::STATUS_PRE_START,
+            self::STATE_PENDING_EVENT_COUNT     => 0,
+            self::STATE_WORKER_ZOMBIE_IDLE_SECS => $this->workerZombieIdleSeconds
         ];
 
         $this
@@ -674,8 +698,8 @@ class EventQueueChannel
      */
     public function hasWorker($workerId)
     {
-        $workersKey = $this->getWorkersKey();
-        $zombieTime = time() - $this->zombieWorkerIdleSeconds;
+        $workersKey  = $this->getWorkersKey();
+        $zombieTime  = $this->getWorkerZombieTime();
         $lastCheckIn = $this->redis->zScore($workersKey, $workerId);
 
         if ($lastCheckIn && $lastCheckIn > $zombieTime) {
@@ -693,7 +717,7 @@ class EventQueueChannel
     public function getActiveWorkerCount()
     {
         $workersKey = $this->getWorkersKey();
-        $zombieTime = time() - $this->zombieWorkerIdleSeconds;
+        $zombieTime = $this->getWorkerZombieTime();
         return $this->redis->zCount($workersKey, '(' . $zombieTime, '+inf');
     }
 
@@ -1179,6 +1203,41 @@ class EventQueueChannel
     }
 
     /**
+     * Returns channel's identifier.
+     * @return string
+     */
+    public function getChannelId()
+    {
+        return $this->channelId;
+    }
+
+    /**
+     * Returns channel's qualified identifier (includes Site ID).
+     * @return string
+     */
+    public function getQualifiedChannelId()
+    {
+        if ($this->tenantKey) {
+            $qualifiedChannelId = $this->tenantKey
+                                . self::QUALIFIED_CHANNEL_ID_DELIM
+                                . $this->channelId;
+        } else {
+            $qualifiedChannelId = $this->channelId;
+        }
+
+        return $qualifiedChannelId;
+    }
+
+    /**
+     * Returns set of event names handled by channel.
+     * @return array
+     */
+    public function getHandledEvents()
+    {
+        return $this->handledEvents;
+    }
+
+    /**
      * Sets max number of pending events per worker for this channel.
      *
      * @param integer $maxLoadCount
@@ -1211,61 +1270,12 @@ class EventQueueChannel
     }
 
     /**
-     * Sets $tenantKey.
-     * @param string $tenantKey
-     * @return void
-     */
-    public function setTenantKey($tenantKey)
-    {
-        $this->tenantKey = $tenantKey;
-    }
-
-    /**
      * Returns $tenantKey
      * @return string
      */
     public function getTenantKey()
     {
         return $this->tenantKey;
-    }
-
-    /**
-     * Sets $zombieIdleWorkerSeconds.
-     * @param integer $zombieIdleWorkerSeconds
-     */
-    public function setZombieWorkerIdleSeconds($zombieWorkerIdleSeconds)
-    {
-        if (!is_int($zombieWorkerIdleSeconds)) {
-            throw new \InvalidArgumentException('$zombieWorkerIdleSeconds must be an int');
-        }
-
-        $this->zombieWorkerIdleSeconds = $zombieWorkerIdleSeconds;
-    }
-
-    /**
-     * Returns channel's identifier.
-     * @return string
-     */
-    public function getChannelId()
-    {
-        return $this->channelId;
-    }
-
-    /**
-     * Returns channel's qualified identifier (includes Site ID).
-     * @return string
-     */
-    public function getQualifiedChannelId()
-    {
-        if ($this->tenantKey) {
-            $qualifiedChannelId = $this->tenantKey
-                                . self::QUALIFIED_CHANNEL_ID_DELIM
-                                . $this->channelId;
-        } else {
-            $qualifiedChannelId = $this->channelId;
-        }
-
-        return $qualifiedChannelId;
     }
 
     /**
@@ -1654,6 +1664,16 @@ class EventQueueChannel
         $controlLockKey = $this->getControlLockKey();
         $currentLockId = $this->redis->get($controlLockKey);
         return $currentLockId === $controlLockId;
+    }
+
+    /**
+     * Returns timestamp cutoff used to determine if worker has entered a zombie
+     * state.
+     * @return integer
+     */
+    protected function getWorkerZombieTime()
+    {
+        return time() - $this->workerZombieIdleSeconds;
     }
 
     /**

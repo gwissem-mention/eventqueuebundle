@@ -6,7 +6,7 @@ use CTLib\Component\GarbageCollection\GarbageCollectionDateCalculator;
 use Doctrine\ORM\EntityManager;
 use CTLib\Component\Monolog\Logger;
 use Celltrak\EventQueueBundle\Entity\EventQueue;
-use Celltrak\EventQueueBundle\Entity\EventQueueWorker;
+use Celltrak\EventQueueBundle\Entity\EventQueueWorker as WorkerEntity;
 
 /**
  * Garbage collector for Event Queue.
@@ -33,9 +33,9 @@ class EventQueueGarbageCollector implements GarbageCollectorInterface
      * Valid statuses when purging EventQueueWorker entries.
      */
     const WORKER_PURGE_STATUSES = [
-        EventQueueWorker::STATUS_PROVISIONING,
-        EventQueueWorker::STATUS_FAILED_PROVISIONING,
-        EventQueueWorker::STATUS_DEACTIVATED
+        WorkerEntity::STATUS_PROVISIONING,
+        WorkerEntity::STATUS_FAILED_PROVISIONING,
+        WorkerEntity::STATUS_DEACTIVATED
     ];
 
 

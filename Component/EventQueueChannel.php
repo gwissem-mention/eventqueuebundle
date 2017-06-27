@@ -579,7 +579,7 @@ class EventQueueChannel
 
         // Remove worker from channel's sorted set so it no longer is considered
         // active. At the same time, remove worker kill switch since most of the
-        // time that's what will trigger deactivation.
+        // time that's what will have triggered deactivation.
         $workersKey = $this->getWorkersKey();
         $killSwitchesKey = $this->getWorkerKillSwitchesKey();
 
@@ -599,6 +599,12 @@ class EventQueueChannel
         if ($pinKeysWorkerLocks &&
             ($assignedPinKey = array_search($workerId, $pinKeysWorkerLocks))) {
             $this->releasePinKeyLock($assignedPinKey, $workerId);
+        }
+
+        // If worker is zombie, re-dispatch its current event (if it has one)
+        // because that event is now orphaned.
+        if ($deactivatedReason == WorkerEntity::DEACTIVATED_REASON_ZOMBIE) {
+            $this->reDispatchEventOrphanedByZombie($workerId);
         }
 
         // Log deactivation with database.
@@ -927,6 +933,11 @@ class EventQueueChannel
     public function getNextQueueEntry($workerId)
     {
         $script = "
+            -- Always clear worker's current event because we know it's
+            -- looking for a new one.
+
+            redis.call('HDEL', KEYS[5], ARGV[1])
+
             -- Ensure that channel is running.
 
             if redis.call('HGET', KEYS[1], '" . self::STATE_STATUS . "') ~= '" . self::STATUS_RUNNING . "' then
@@ -943,11 +954,12 @@ class EventQueueChannel
 
             redis.call('ZADD', KEYS[3], ARGV[2], ARGV[1])
 
-            -- Get next entry in queue (will be event or pin pointer).
+            -- Get next entry in queue (will be event or pin key pointer).
 
             local entry = redis.call('LPOP', KEYS[4])
 
-            -- Reduce pending event count if entry returned and is not pointer.
+            -- Reduce pending event count and store as worker's current event
+            -- if entry returned and *is not* pin key pointer.
 
             if entry and
                 entry:sub(1, " . strlen(self::PIN_KEY_POINTER_PREFIX) . ") ~= '" . self::PIN_KEY_POINTER_PREFIX . "' then
@@ -955,6 +967,8 @@ class EventQueueChannel
                 if redis.call('HINCRBY', KEYS[1], '" . self::STATE_PENDING_EVENT_COUNT . "', -1) < 0 then
                     redis.call('HSET', KEYS[1], '" . self::STATE_PENDING_EVENT_COUNT . "', 0)
                 end
+
+                redis.call('HSET', KEYS[5], ARGV[1], entry)
             end
 
             return entry";
@@ -964,7 +978,8 @@ class EventQueueChannel
             $this->getStateKey(),
             $this->getWorkerKillSwitchesKey(),
             $this->getWorkersKey(),
-            $this->getEventsKey()
+            $this->getEventsKey(),
+            $this->getWorkerCurrentEventsKey()
         ];
 
         // The additional arguments used by this script.
@@ -1009,6 +1024,11 @@ class EventQueueChannel
     public function getNextPinnedEvent($pinKey, $workerId)
     {
         $script = "
+            -- Always clear worker's current event because we know it's
+            -- looking for a new one.
+
+            redis.call('HDEL', KEYS[6], ARGV[1])
+
             -- Ensure the channel is running.
 
             if redis.call('HGET', KEYS[1], '" . self::STATE_STATUS . "') ~= '" . self::STATUS_RUNNING . "' then
@@ -1034,12 +1054,15 @@ class EventQueueChannel
 
             local event = redis.call('LPOP', KEYS[5])
 
-            -- If event retrieved, reduce pending event count.
+            -- If event retrieved, reduce pending event count and store as
+            -- worker's current event.
 
             if event then
                 if redis.call('HINCRBY', KEYS[1], '" . self::STATE_PENDING_EVENT_COUNT . "', -1) < 0 then
                     redis.call('HSET', KEYS[1], '" . self::STATE_PENDING_EVENT_COUNT . "', 0)
                 end
+
+                redis.call('HSET', KEYS[6], ARGV[1], event)
             end
 
             return event";
@@ -1050,7 +1073,8 @@ class EventQueueChannel
             $this->getWorkerKillSwitchesKey(),
             $this->getWorkersKey(),
             $this->getPinKeysControlLocksKey(),
-            $this->getPinnedEventsKey($pinKey)
+            $this->getPinnedEventsKey($pinKey),
+            $this->getWorkerCurrentEventsKey()
         ];
 
         // The additional arguments used by this script.
@@ -1327,6 +1351,44 @@ class EventQueueChannel
         } while (count($queueEntries) == $batchSize);
 
         return $reDispatchedCount;
+    }
+
+    /**
+     * Re-dispatch worker's current event that will be orphaned because worker
+     * has turned into a zombie.
+     *
+     * @param integer $workerId
+     * @return void
+     */
+    protected function reDispatchEventOrphanedByZombie($workerId)
+    {
+        $this->logger->debug("EventQueueChannel: re-dispatch event orphaned by zombie workerId {$workerId}");
+
+        $currentEventsKey = $this->getWorkerCurrentEventsKey();
+        $encodedCurrentEvent = $this->redis->hGet($currentEventsKey, $workerId);
+
+        if (empty($encodedCurrentEvent)) {
+            $this->logger->debug("EventQueueChannel: zombie worker does not have current event");
+            return;
+        }
+
+        $currentEvent = json_decode($encodedCurrentEvent);
+        $queueId = $currentEvent->queueId;
+        $pinKey = $currentEvent->pinKey;
+
+        if ($pinKey) {
+            $this->retryPinnedPersistedEvents($pinKey);
+        } else {
+            $queueEntry = $this->entityManager
+                ->getRepository('CelltrakEventQueueBundle:EventQueue')
+                ->_mustFind($queueId);
+
+            $this->retryPersistedEvent($queueEntry);
+        }
+
+        // Clear zombie's current event now that it's been successfully
+        // re-dispatched.
+        $this->redis->hDel($currentEventsKey, $workerId);
     }
 
     /**
@@ -1730,6 +1792,15 @@ class EventQueueChannel
     protected function getWorkerKillSwitchesKey()
     {
         return $this->qualifyKey('kill_switches');
+    }
+
+    /**
+     * Returns channel's worker current events key.
+     * @return string
+     */
+    protected function getWorkerCurrentEventsKey()
+    {
+        return $this->qualifyKey('worker_current_events');
     }
 
     /**

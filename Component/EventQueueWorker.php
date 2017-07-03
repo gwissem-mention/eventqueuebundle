@@ -159,6 +159,15 @@ class EventQueueWorker
                 new MemoryUsageMonitor($this->memoryUsagePercentage);
         }
 
+        // Create a WorkerProxy used to pass to the listener callbacks so they
+        // have a controlled way to inspect/interact with the worker.
+        $this->workerProxy = new EventQueueWorkerProxy(
+            $this->workerId,
+            $this->channel,
+            $this->logger,
+            $this->memoryMonitor
+        );
+
         $this->work();
     }
 
@@ -668,7 +677,7 @@ class EventQueueWorker
         $attempt = 1
     ) {
         try {
-            call_user_func($listener, $data);
+            call_user_func($listener, $data, $this->workerProxy);
         } catch (DBALException $e) {
             // Test if db lock exception. If it is, we may attempt listener again.
             $pdoException = $e->getPrevious();

@@ -47,11 +47,12 @@ class EventQueueListener
     /**
      * Allows the listener to be a callable.
      * @param array $data   Event data.
+     * @param EventQueueWorkerProxy $workerProxy
      * @return void
      */
-    public function __invoke(array $data)
+    public function __invoke(array $data, EventQueueWorkerProxy $workerProxy)
     {
-        call_user_func($this->callback, $data);
+        call_user_func($this->callback, $data, $workerProxy);
         return;
     }
 

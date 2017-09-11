@@ -184,7 +184,10 @@ class EventQueueWorker
             $deactivatedReason == WorkerEntity::DEACTIVATED_REASON_ERROR
             && $this->currentEvent
         ) {
-            $this->currentEventResult->stopLogging($error);
+            if ($this->currentEventResult->isStopped() == false) {
+                $this->currentEventResult->stopLogging($error);
+            }
+
             try {
                 $this->logEventProcessingResult(
                     $this->currentEvent,

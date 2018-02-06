@@ -125,8 +125,8 @@ class EventQueueWorkerCommand extends ContainerAwareCommand
 
         // Register a shutdown handler with PHP so fatal errors will gracefully
         // interrupt the worker. It also means the fatal error will get logged
-        // within App Log! However, if this is a memory limit exceeded error, we
-        // won't try to deactivate and clean up the worker, as we do not have the
+        // within App Log! However, if this is a memory limit exceeded error, the
+        // worker won't try to deactivate, as we do not have the
         // required memory to do so. Instead, we'll let  the worker remain as is,
         // and it will eventually deactivate normally with a zombie status.
         $shutdownHandler = function($worker) {
@@ -135,9 +135,7 @@ class EventQueueWorkerCommand extends ContainerAwareCommand
             if ($error) {
                 $error = json_encode($error);
                 $this->logger->error("Event Queue Worker fatal error: " . $error);
-                if (strpos($error, 'Allowed memory size') === false) {
-                    $worker->stop(WorkerEntity::DEACTIVATED_REASON_ERROR, $error);
-                }
+                $worker->stop(WorkerEntity::DEACTIVATED_REASON_ERROR, $error);
             }
         };
 

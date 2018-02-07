@@ -198,6 +198,13 @@ class EventQueueWorker
             }
         }
 
+        // If we have run out of memory, we won't bother trying to
+        // attempt to deactivate, as it will fail.
+        if ($error
+            && strpos($error, 'Allowed memory size') !== false) {
+            return;
+        }
+
         $this
             ->channel
             ->deactivateWorker($this->workerId, $deactivatedReason, $error);

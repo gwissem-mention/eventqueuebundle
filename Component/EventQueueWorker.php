@@ -191,7 +191,7 @@ class EventQueueWorker
             // If we have run out of memory, we won't bother trying to log
             // the result or attempt to deactivate, as it will fail.
             if ($error
-                && strpos($error, 'Allowed memory size') === false) {
+                && strpos($error, 'Allowed memory size') !== false) {
                 return;
             }
 

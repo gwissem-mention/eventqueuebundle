@@ -11,9 +11,9 @@
     ],
     "require": {
         "php": ">=5.4",
-        "symfony/framework-bundle": "^2.1",
-        "celltrak/CTLib": "~2.6 || dev-develop",
-        "celltrak/redis-bundle": "~1.1 || dev-develop"
+        "symfony/framework-bundle": "^3.4",
+        "celltrak/CTLib": "^3.4",
+        "celltrak/redis-bundle": "^3.4"
     },
     "autoload": {
         "psr-4": { "Celltrak\\EventQueueBundle\\": "" }
@@ -21,11 +21,11 @@
     "repositories": [
         {
             "type": "vcs",
-            "url":  "git@bitbucket.org:celltrakdev/ct20_ctlib.git"
+            "url":  "git@github.com:gwissem-mention/ct20_ctlib.git"
         },
         {
             "type": "vcs",
-            "url":  "git@bitbucket.org:celltrakdev/celltrakredisbundle.git"
+            "url":  "git@github.com:gwissem-mention/redisbundle.git"
         }
     ]
 }

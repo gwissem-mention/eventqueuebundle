@@ -11,9 +11,9 @@
     ],
     "require": {
         "php": ">=5.4",
-        "symfony/framework-bundle": "^3.4",
-        "celltrak/CTLib": "^3.4",
-        "celltrak/redis-bundle": "^3.4"
+        "symfony/framework-bundle": "^4.4",
+        "celltrak/CTLib": "^4.4",
+        "celltrak/redis-bundle": "^4.4"
     },
     "autoload": {
         "psr-4": { "Celltrak\\EventQueueBundle\\": "" }
